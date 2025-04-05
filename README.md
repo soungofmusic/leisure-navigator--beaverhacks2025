@@ -46,7 +46,7 @@ Many people struggle to identify leisure activities that match their interests a
   – Deployed entirely on Google Cloud Platform (GCP) using Cloud Run/App Engine, Cloud Functions, and Firestore.
 
 - **MCP Integration (Optional Advanced Feature):**  
-  – Configure a GitHub MCP server or add workspace rules so Windsurf can fetch additional context from your GitHub repository. This enables the AI to use your own libraries and documentation in its code generation and suggestions.
+  – Configure a GitHub MCP server or add workspace rules to fetch additional context from your GitHub repository. This enables the AI to use your own libraries and documentation in its code generation and suggestions.
 
 ---
 
@@ -64,8 +64,8 @@ Many people struggle to identify leisure activities that match their interests a
   – Headless CMS (e.g., Sanity) with GROQ for content management
 
 - **MCP & GitHub Integration (Advanced):**  
-  – Option to set up a GitHub MCP server to allow Windsurf to fetch context from your GitHub repository  
-  – Workspace rules (via a `.windsurfrules` file) to reference your GitHub repo URL if you prefer a lightweight setup
+  – Option to set up a GitHub MCP server to fetch context from your GitHub repository  
+  – Workspace rules to reference your GitHub repo URL if you prefer a lightweight setup
 
 ---
 
@@ -88,7 +88,7 @@ Many people struggle to identify leisure activities that match their interests a
    – Monitoring through GCP Cloud Monitoring ensures performance and security.
 
 5. **Optional MCP Integration:**  
-   – A GitHub MCP server (or workspace rule) connects Windsurf to your GitHub repository so the AI can incorporate context from your own libraries.
+   – A GitHub MCP server (or workspace rule) connects to your GitHub repository so the AI can incorporate context from your own libraries.
 
 ---
 
