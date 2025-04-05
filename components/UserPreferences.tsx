@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ActivityType, UserPreferences as UserPreferencesType } from '@/types';
+import { UserPreferences as UserPreferencesType } from '@/types';
 
 interface UserPreferencesProps {
-  onSave: (preferences: UserPreferencesType) => void;
-  initialPreferences?: UserPreferencesType;
+  preferences: UserPreferencesType;
+  onPreferencesUpdate: (preferences: UserPreferencesType) => void;
 }
 
 const defaultPreferences: UserPreferencesType = {
@@ -16,13 +16,17 @@ const defaultPreferences: UserPreferencesType = {
 };
 
 const UserPreferences: React.FC<UserPreferencesProps> = ({ 
-  onSave, 
-  initialPreferences = defaultPreferences 
+  preferences, 
+  onPreferencesUpdate 
 }) => {
-  const [preferences, setPreferences] = useState<UserPreferencesType>(initialPreferences);
+  const [localPreferences, setLocalPreferences] = useState<UserPreferencesType>(preferences);
   const [isEditing, setIsEditing] = useState(false);
-  
-  const activityTypes: { label: string; value: ActivityType }[] = [
+
+  useEffect(() => {
+    setLocalPreferences(preferences);
+  }, [preferences]);
+
+  const activityTypes: { label: string; value: string }[] = [
     { label: 'Outdoor', value: 'outdoor' },
     { label: 'Indoor', value: 'indoor' },
     { label: 'Cultural', value: 'cultural' },
@@ -53,37 +57,37 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
     'scenic',
   ];
 
-  const toggleActivityType = (type: ActivityType) => {
-    setPreferences(prev => {
-      const types = prev.favoriteTypes.includes(type)
-        ? prev.favoriteTypes.filter(t => t !== type)
-        : [...prev.favoriteTypes, type];
-      
-      return { ...prev, favoriteTypes: types };
-    });
+  const handleTypeToggle = (type: string) => {
+    const newPreferences = {...localPreferences};
+    newPreferences.favoriteTypes = localPreferences.favoriteTypes.includes(type)
+      ? localPreferences.favoriteTypes.filter(t => t !== type)
+      : [...localPreferences.favoriteTypes, type];
+    
+    setLocalPreferences(newPreferences);
+    onPreferencesUpdate(newPreferences);
   };
 
-  const toggleTag = (tag: string) => {
-    setPreferences(prev => {
-      const tags = prev.favoriteTags.includes(tag)
-        ? prev.favoriteTags.filter(t => t !== tag)
-        : [...prev.favoriteTags, tag];
-      
-      return { ...prev, favoriteTags: tags };
-    });
+  const handleTagToggle = (tag: string) => {
+    const newPreferences = {...localPreferences};
+    newPreferences.favoriteTags = localPreferences.favoriteTags.includes(tag)
+      ? localPreferences.favoriteTags.filter(t => t !== tag)
+      : [...localPreferences.favoriteTags, tag];
+    
+    setLocalPreferences(newPreferences);
+    onPreferencesUpdate(newPreferences);
   };
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setPreferences(prev => ({
-            ...prev,
-            location: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            },
-          }));
+          const newPreferences = {...localPreferences};
+          newPreferences.location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setLocalPreferences(newPreferences);
+          onPreferencesUpdate(newPreferences);
         },
         (error) => {
           console.error('Error getting location:', error);
@@ -93,11 +97,6 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
     } else {
       alert('Geolocation is not supported by your browser.');
     }
-  };
-
-  const handleSave = () => {
-    onSave(preferences);
-    setIsEditing(false);
   };
 
   return (
@@ -119,12 +118,6 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
             >
               Cancel
             </button>
-            <button 
-              onClick={handleSave}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded hover:bg-primary-700"
-            >
-              Save
-            </button>
           </div>
         )}
       </div>
@@ -137,15 +130,12 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
             {activityTypes.map((type) => (
               <button
                 key={type.value}
-                onClick={() => isEditing && toggleActivityType(type.value)}
+                onClick={() => handleTypeToggle(type.value)}
                 className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-                  preferences.favoriteTypes.includes(type.value)
-                    ? 'bg-primary-500 text-white'
-                    : isEditing 
-                      ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
-                      : 'bg-gray-50 text-gray-400'
-                } ${!isEditing && 'cursor-default'}`}
-                disabled={!isEditing}
+                  localPreferences.favoriteTypes.includes(type.value)
+                    ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                }`}
               >
                 {type.label}
               </button>
@@ -160,15 +150,12 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
             {popularTags.map((tag) => (
               <button
                 key={tag}
-                onClick={() => isEditing && toggleTag(tag)}
+                onClick={() => handleTagToggle(tag)}
                 className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-                  preferences.favoriteTags.includes(tag)
-                    ? 'bg-primary-500 text-white'
-                    : isEditing 
-                      ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
-                      : 'bg-gray-50 text-gray-400'
-                } ${!isEditing && 'cursor-default'}`}
-                disabled={!isEditing}
+                  localPreferences.favoriteTags.includes(tag)
+                    ? 'bg-primary-100 text-primary-700 border border-primary-300'
+                    : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                }`}
               >
                 {tag}
               </button>
@@ -180,10 +167,10 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
         <div>
           <h3 className="mb-2 font-medium">Default Location</h3>
           <div className="flex items-center space-x-2">
-            {preferences.location ? (
+            {localPreferences.location ? (
               <div className="py-2 px-3 bg-gray-100 rounded-md flex-grow">
                 <p className="text-sm text-gray-700">
-                  Lat: {preferences.location.lat.toFixed(6)}, Lng: {preferences.location.lng.toFixed(6)}
+                  Lat: {localPreferences.location.lat.toFixed(6)}, Lng: {localPreferences.location.lng.toFixed(6)}
                 </p>
               </div>
             ) : (

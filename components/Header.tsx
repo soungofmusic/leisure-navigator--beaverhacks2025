@@ -45,6 +45,9 @@ export default function Header() {
             <Link href="/saved" className="text-gray-700 hover:text-primary-600">
               Saved
             </Link>
+            <Link href="/profile" className="text-gray-700 hover:text-primary-600">
+              Profile
+            </Link>
           </nav>
         </div>
 
@@ -59,6 +62,9 @@ export default function Header() {
             </Link>
             <Link href="/saved" className="py-2 text-gray-700 hover:text-primary-600">
               Saved
+            </Link>
+            <Link href="/profile" className="py-2 text-gray-700 hover:text-primary-600">
+              Profile
             </Link>
           </nav>
         )}
