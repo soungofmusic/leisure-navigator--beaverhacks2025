@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LeisureActivity } from '@/types';
+import SaveActivityButton from './SaveActivityButton';
 
 interface ActivityCardProps {
   activity: LeisureActivity;
@@ -85,12 +86,19 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
           )}
         </div>
         
-        <Link 
-          href={`/activities/${activity.id}`} 
-          className="block w-full py-2 text-sm font-medium text-center text-white rounded bg-primary-600 hover:bg-primary-700"
-        >
-          View Details
-        </Link>
+        <div className="flex flex-col space-y-2">
+          <Link 
+            href={`/activities/${activity.id}`} 
+            className="block w-full py-2 text-sm font-medium text-center text-white rounded bg-primary-600 hover:bg-primary-700"
+          >
+            View Details
+          </Link>
+          <SaveActivityButton 
+            activityId={activity.id} 
+            buttonStyle="full" 
+            className="py-2 text-sm font-medium border border-gray-300 rounded hover:bg-gray-50"
+          />
+        </div>
       </div>
     </div>
   );
