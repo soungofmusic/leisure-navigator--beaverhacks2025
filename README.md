@@ -142,11 +142,3 @@ Many people struggle to identify leisure activities that match their interests a
   – Integrate augmented reality for immersive navigation of local events.
 - **Social & Collaborative Features:**  
   – Allow users to share their leisure plans and reviews with friends or community groups.
-
----
-
-## 9. Conclusion
-
-Leisure Navigator combines cutting-edge Google technologies, a flexible headless CMS, and innovative multimodal interactions to provide a personalized and context-aware leisure discovery experience. With a focused MVP designed for a 24-hour hackathon, the project balances ambition with practicality, ensuring core functionalities are delivered while leaving room for future growth.
-
-By leveraging GCP for scalability, integrating advanced APIs, and optionally using MCP to connect Windsurf with your GitHub repository, Leisure Navigator stands as a robust solution to enhance how people discover and plan leisure activities.
