@@ -27,11 +27,17 @@ Many people struggle to identify leisure activities that match their interests a
 - **Leisure Activity Discovery:**  
   – Search and filter leisure activities by type, location, time, and reviews.  
   – Use a headless CMS (e.g., Sanity) with GROQ queries to efficiently retrieve content.
+  – Location search using Google Places Autocomplete for easy destination selection.
 
 - **Multimodal Input Processing:**  
   – **Text Input:** Query leisure activities via typed questions.  
   – **Voice Input:** Use Google Cloud Speech-to-Text to allow hands-free queries.  
   – **Image Recognition:** Use Google Cloud Vision API to interpret images (e.g., flyers or local scenes) and extract relevant information.
+
+- **AI-Enhanced Information:**  
+  – **GROQ-Powered Descriptions:** Generate rich, informative descriptions of activities using GROQ's LLM capabilities.  
+  – **Web Search Summaries:** Get comprehensive information about activities from web searches, summarized by GROQ's AI into structured, easy-to-read formats.  
+  – AI enhancements provide details on attractions, visitor information, interesting facts, and visitor tips on demand.
 
 - **Location-Based Services:**  
   – Integrate Google Maps and Places API to display activities near the user and enable geo-fencing notifications.
@@ -44,9 +50,6 @@ Many people struggle to identify leisure activities that match their interests a
 
 - **Scalability & Deployment:**  
   – Deployed entirely on Google Cloud Platform (GCP) using Cloud Run/App Engine, Cloud Functions, and Firestore.
-
-- **MCP Integration (Optional Advanced Feature):**  
-  – Configure a GitHub MCP server or add workspace rules to fetch additional context from your GitHub repository. This enables the AI to use your own libraries and documentation in its code generation and suggestions.
 
 ---
 
@@ -64,8 +67,6 @@ Many people struggle to identify leisure activities that match their interests a
   – Headless CMS (e.g., Sanity) with GROQ for content management
 
 - **MCP & GitHub Integration (Advanced):**  
-  – Option to set up a GitHub MCP server to fetch context from your GitHub repository  
-  – Workspace rules to reference your GitHub repo URL if you prefer a lightweight setup
 
 ---
 
@@ -87,12 +88,41 @@ Many people struggle to identify leisure activities that match their interests a
    – Containerized Next.js app deployed on Cloud Run or App Engine ensures fast loading times and global delivery.  
    – Monitoring through GCP Cloud Monitoring ensures performance and security.
 
-5. **Optional MCP Integration:**  
-   – A GitHub MCP server (or workspace rule) connects to your GitHub repository so the AI can incorporate context from your own libraries.
-
 ---
 
-## 7. Workflow & Development Timeline (24-Hour MVP)
+## 7. AI Enhancement Features
+
+### **GROQ Integration**
+Leisure Navigator leverages GROQ's powerful language models to enhance user experience in several ways:
+
+1. **AI-Enhanced Activity Descriptions:**
+   - Click the "AI-Enhanced Description" button on any activity details page to generate a more engaging and informative description
+   - GROQ analyzes the basic activity description and enhances it with additional details and context
+
+2. **Web Search Summaries:**
+   - The "Web Search Summary" button fetches and summarizes web search results related to the activity
+   - Information is presented in a structured format including:
+     - Overview of the activity/location
+     - Key highlights and attractions
+     - Practical visitor information (hours, costs, best times to visit)
+     - Interesting facts and history
+     - Tips from visitor reviews
+
+3. **Natural Language Processing:**
+   - Enhanced search capabilities through natural language understanding
+   - Processing of user queries to understand intent and provide relevant activity suggestions
+
+### **Environment Setup**
+To use the GROQ features, you need to set up your environment variables:
+
+1. Create a `.env` file in the root directory with the following:
+   ```
+   NEXT_PUBLIC_GROQ_API_KEY=your_groq_api_key
+   ```
+
+2. Obtain an API key from [GROQ](https://console.groq.com/) and add it to your environment variables
+
+## 8. Workflow & Development Timeline (24-Hour MVP)
 
 ### **Hours 1-2: Setup & Planning**
 - Finalize project scope, create wireframes, and outline user journeys.
@@ -105,9 +135,6 @@ Many people struggle to identify leisure activities that match their interests a
 ### **Hours 5-9: Backend & API Integration**
 - Develop serverless endpoints with Cloud Functions to handle API calls.
 - Integrate Google APIs (Maps, Places, Calendar, Vision, Speech-to-Text) and set up GROQ queries for the headless CMS.
-- (Optional) Configure MCP integration for GitHub context:
-  - Clone and configure a GitHub MCP server.
-  - Add an entry in your `mcp_config.json` for the GitHub MCP server.
 
 ### **Hours 9-13: Multimodal Features & Core Functionality**
 - Implement text search for leisure activities.
@@ -121,7 +148,6 @@ Many people struggle to identify leisure activities that match their interests a
 ### **Hours 16-20: Deployment & Final Testing**
 - Containerize and deploy the Next.js app on GCP using Cloud Run or App Engine.
 - Perform final testing on responsiveness, performance, and security.
-- Verify MCP integration by testing GitHub context retrieval.
 
 ### **Hours 20-24: Demo Preparation & Documentation**
 - Prepare a demo showcasing key functionalities (search, map, calendar sync, and multimodal inputs).
@@ -130,7 +156,7 @@ Many people struggle to identify leisure activities that match their interests a
 
 ---
 
-## 8. Future Enhancements
+## 9. Future Enhancements
 
 - **Full Multimodal Integration:**  
   – Enhance voice and image processing with improved AI and error handling.
