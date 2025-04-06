@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { LeisureActivity } from '@/types';
 import Map from '@/components/Map';
 import SaveActivityButton from '@/components/SaveActivityButton';
-import { enhanceActivityDescription } from '@/lib/groqService';
+import { enhanceActivityDescription, getWebSearchSummary } from '@/lib/groqService';
 
 interface ActivityDetailPageProps {
   params: {
@@ -21,6 +21,11 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
   const [enhancedDescription, setEnhancedDescription] = useState<string | null>(null);
   const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  
+  // State for web search summary
+  const [webSearchSummary, setWebSearchSummary] = useState<string | null>(null);
+  const [isLoadingWebSearch, setIsLoadingWebSearch] = useState(false);
+  const [webSearchError, setWebSearchError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadActivity = async () => {
@@ -145,6 +150,33 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
       setIsLoadingEnhanced(false);
     }
   };
+  
+  // Function to fetch web search summary using GROQ
+  const getWebSearchInformation = async () => {
+    if (!activity) return;
+    
+    try {
+      setIsLoadingWebSearch(true);
+      setWebSearchError(null);
+      
+      // Get location string from activity if available
+      const locationStr = activity.location?.address || '';
+      
+      // Use GROQ to get web search summary
+      const summary = await getWebSearchSummary(
+        activity.title,
+        activity.type,
+        locationStr
+      );
+      
+      setWebSearchSummary(summary);
+    } catch (err) {
+      console.error('Error getting web search summary:', err);
+      setWebSearchError('Could not load web search information. Please try again later.');
+    } finally {
+      setIsLoadingWebSearch(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -242,8 +274,9 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                 <h2 className="mb-2 text-xl font-semibold text-gray-800">Description</h2>
                 <p className="text-gray-700">{activity.description}</p>
                 
-                {/* GROQ Enhanced Information Button */}
-                <div className="mt-4">
+                {/* AI Enhancement buttons */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {/* GROQ Enhanced Information Button */}
                   <button 
                     onClick={getEnhancedInformation}
                     disabled={isLoadingEnhanced}
@@ -255,14 +288,38 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Generating AI Details...
+                        Generating Description...
                       </>
                     ) : (
                       <>
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Generate AI-Enhanced Details
+                        AI-Enhanced Description
+                      </>
+                    )}
+                  </button>
+                  
+                  {/* Web Search Summary Button */}
+                  <button 
+                    onClick={getWebSearchInformation}
+                    disabled={isLoadingWebSearch}
+                    className="flex items-center px-4 py-2 text-sm font-medium text-white transition-colors rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400"
+                  >
+                    {isLoadingWebSearch ? (
+                      <>
+                        <svg className="w-4 h-4 mr-2 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Searching Web...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Web Search Summary
                       </>
                     )}
                   </button>
@@ -281,10 +338,33 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                   </div>
                 )}
                 
-                {/* Display Error Message */}
+                {/* Display Web Search Summary */}
+                {webSearchSummary && (
+                  <div className="p-4 mt-4 bg-emerald-50 border border-emerald-100 rounded-md">
+                    <div className="flex items-center mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <h3 className="text-md font-semibold text-emerald-700">Web Search Summary</h3>
+                    </div>
+                    <div className="prose prose-sm max-w-none text-gray-700">
+                      {webSearchSummary.split('\n').map((paragraph, index) => (
+                        <p key={index} className="mb-2">{paragraph}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Display Error Messages */}
                 {aiError && (
                   <div className="p-4 mt-4 bg-red-50 border border-red-100 rounded-md">
                     <p className="text-red-600">{aiError}</p>
+                  </div>
+                )}
+                
+                {webSearchError && (
+                  <div className="p-4 mt-4 bg-red-50 border border-red-100 rounded-md">
+                    <p className="text-red-600">{webSearchError}</p>
                   </div>
                 )}
               </div>

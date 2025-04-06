@@ -296,6 +296,56 @@ export async function processNaturalLanguageQuery(query: string, location?: { la
  * @param base64Image Base64-encoded image content
  * @returns Extracted text and suggested search filters
  */
+/**
+ * Search and summarize information about an activity using Google search results
+ * @param activityTitle The title of the activity
+ * @param activityType The type of activity
+ * @param location Optional location information
+ * @returns A summary generated from web search results
+ */
+export async function getWebSearchSummary(
+  activityTitle: string,
+  activityType: ActivityType,
+  location?: string
+): Promise<string> {
+  // If API key is not set, return an error message
+  if (!getGroqApiKey()) {
+    console.warn('Groq API key not found. Cannot generate web search summary.');
+    return 'Web search summary is not available at this time.';
+  }
+
+  try {
+    // Create a search query based on the activity details
+    const searchQuery = location
+      ? `${activityTitle} ${activityType} in ${location} tourism review information`
+      : `${activityTitle} ${activityType} tourism review information`;
+
+    console.log('Generating web search summary for query:', searchQuery);
+    
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a travel and leisure information expert that specializes in summarizing information from web searches. Given a search query about a leisure activity, provide a well-structured, informative summary that would help someone decide if they want to visit or participate in this activity. Include details about what makes this place special, what visitors can expect, best times to visit, and any other helpful travel tips when available.'
+      },
+      {
+        role: 'user',
+        content: `Please search the web for information about: "${searchQuery}" and provide a comprehensive but concise summary of what you find. Structure your response to include:\n\n1. A brief overview of what it is\n2. Key highlights and attractions\n3. Practical visitor information (hours, costs, best times to visit)\n4. Interesting facts or history\n5. Tips from visitor reviews`
+      }
+    ];
+
+    const response = await callGroqApi(messages, 'llama3-8b-8192', {
+      max_tokens: 800,  // Allow for a longer response with detailed information
+      temperature: 0.4  // Lower temperature for more factual responses
+    });
+
+    const summary = response.choices[0].message.content || 'No information found.';
+    return summary;
+  } catch (error) {
+    console.error('Error generating web search summary with Groq:', error);
+    return 'Unable to generate a summary from web search results at this time.';
+  }
+}
+
 export async function processImageContent(base64Image: string): Promise<ImageProcessingResult> {
   // Default result structure
   const defaultResult: ImageProcessingResult = {
