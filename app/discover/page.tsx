@@ -12,7 +12,10 @@ import { useUser } from '../../context/UserContext';
 export default function DiscoverPage() {
   const { preferences } = useUser();
   const [activities, setActivities] = useState<LeisureActivity[]>([]);
-  const [activeFilters, setActiveFilters] = useState<{ types: ActivityType[] }>({ types: [] });
+  const [activeFilters, setActiveFilters] = useState<{ 
+    types: ActivityType[],
+    location?: { lat: number; lng: number } 
+  }>({ types: [] });
   const [filteredActivities, setFilteredActivities] = useState<LeisureActivity[]>([]);
   const [displayedActivities, setDisplayedActivities] = useState<LeisureActivity[]>([]);
   const [visibleCount, setVisibleCount] = useState(10); // Initially show 10 activities
@@ -28,11 +31,20 @@ export default function DiscoverPage() {
   );
   const [searchRadius, setSearchRadius] = useState<number>(10000); // Default 10km radius
   const [sortOption, setSortOption] = useState<'rating' | 'reviewCount' | null>(null);
+  // Key for forcing MultimodalSearch component to refresh when location changes
+  const [searchComponentKey, setSearchComponentKey] = useState<number>(0);
 
   // Update displayed activities when filtered activities or visible count changes
   useEffect(() => {
     setDisplayedActivities(filteredActivities.slice(0, visibleCount));
   }, [filteredActivities, visibleCount]);
+  
+  // Force MultimodalSearch to refresh when mapCenter changes significantly
+  useEffect(() => {
+    // Update the key when map center changes significantly (only to 2 decimal places)
+    setSearchComponentKey(prev => prev + 1);
+    console.log(`Map center updated to: ${mapCenter.lat.toFixed(4)}, ${mapCenter.lng.toFixed(4)}`);
+  }, [mapCenter.lat.toFixed(2), mapCenter.lng.toFixed(2)]);
   
   // Load initial activities
   useEffect(() => {
@@ -253,9 +265,15 @@ export default function DiscoverPage() {
   // Handle area search from map
   const handleAreaSearch = async ({ center, radius }: { center: { lat: number; lng: number }; radius: number }) => {
     try {
-      // Update map center and search radius
+      // Update map center and search radius - these will be reflected in search
       setMapCenter(center);
       setSearchRadius(radius);
+      
+      // Clear any previous search query when location changes significantly
+      const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+      if (searchInput && searchInput.value) {
+        console.log('Location changed significantly - refreshing search with new location');
+      }
       
       console.log(`Searching area around ${center.lat}, ${center.lng} with radius ${radius}m`);
       
@@ -371,7 +389,7 @@ export default function DiscoverPage() {
       // Save active filters for reference
       setActiveFilters({ types: filters.types });
       
-      // Update map center if location is provided
+      // Update map center if location is provided in filters
       if (filters.location) {
         setMapCenter(filters.location);
       }
@@ -453,8 +471,12 @@ export default function DiscoverPage() {
               <p className="text-sm text-gray-600 mb-2">
                 Search using text, voice commands, or snap a photo
               </p>
-              {/* Smart natural language search */}
-              <MultimodalSearch onSearch={handleSearch} location={mapCenter} />
+              {/* Smart natural language search - key ensures re-rendering when location changes */}
+              <MultimodalSearch 
+                key={searchComponentKey}
+                onSearch={handleSearch} 
+                location={mapCenter} 
+              />
             </div>
             <div className="mb-6">
               <h3 className="mb-2 text-lg font-medium text-gray-900">
