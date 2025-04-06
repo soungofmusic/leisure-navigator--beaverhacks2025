@@ -74,14 +74,14 @@ export default function DiscoverPage() {
         // Apply sorting if needed
         if (sortOption && data.length > 0) {
           if (sortOption === 'rating') {
-            data.sort((a, b) => {
+            data.sort((a: LeisureActivity, b: LeisureActivity) => {
               // Safely access rating property or fall back to 0
               const ratingA = a.googleDetails?.rating ?? a.rating ?? 0;
               const ratingB = b.googleDetails?.rating ?? b.rating ?? 0;
               return ratingB - ratingA;
             });
           } else if (sortOption === 'reviewCount') {
-            data.sort((a, b) => {
+            data.sort((a: LeisureActivity, b: LeisureActivity) => {
               // Safely access review counts or fall back to 0
               const countA = a.googleDetails?.userRatingsTotal ?? 0;
               const countB = b.googleDetails?.userRatingsTotal ?? 0;
@@ -453,7 +453,8 @@ export default function DiscoverPage() {
               <p className="text-sm text-gray-600 mb-2">
                 Search using text, voice commands, or snap a photo
               </p>
-              <MultimodalSearch onSearch={handleSearch} />
+              {/* Smart natural language search */}
+              <MultimodalSearch onSearch={handleSearch} location={mapCenter} />
             </div>
             <div className="mb-6">
               <h3 className="mb-2 text-lg font-medium text-gray-900">

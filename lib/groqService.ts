@@ -174,9 +174,10 @@ export async function getPersonalizedRecommendations(
 /**
  * Process natural language search queries
  * @param query Natural language query from user
+ * @param location Optional location to focus the search around
  * @returns Structured search filters
  */
-export async function processNaturalLanguageQuery(query: string): Promise<{
+export async function processNaturalLanguageQuery(query: string, location?: { lat: number; lng: number }): Promise<{
   types?: ActivityType[];
   priceRange?: { min: number; max: number };
   tags?: string[];
@@ -195,10 +196,17 @@ export async function processNaturalLanguageQuery(query: string): Promise<{
   }
 
   try {
+    let locationContext = '';
+    if (location) {
+      // Convert lat/lng to a readable location description using approximate labels
+      locationContext = `The search is focused around coordinates (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}). `;
+      // Note: In a production app, we would use reverse geocoding to get a human-readable location name
+    }
+
     const messages = [
       {
         role: 'system',
-        content: 'You extract structured search parameters from natural language queries about leisure activities. Return a VALID JSON object with fields: types (array of activity types), priceRange (object with min and max), and tags (array of relevant tags). The response must be ONLY valid JSON with no additional text.'
+        content: `You are an expert in analyzing natural language search queries for leisure activities and events. ${locationContext}Extract structured search parameters from user queries.`
       },
       {
         role: 'user',

@@ -11,15 +11,15 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative py-20 bg-gradient-to-r from-primary-500 to-primary-700">
         <div className="container">
-          <div className="grid items-center grid-cols-1 gap-8 md:grid-cols-2">
-            <div className="text-white">
+          <div className="grid items-center grid-cols-1">
+            <div className="text-white text-center max-w-3xl mx-auto">
               <h1 className="mb-4 text-4xl font-bold leading-tight md:text-5xl">
                 Discover Exciting Leisure Activities Near You
               </h1>
               <p className="mb-6 text-xl opacity-90">
                 Find personalized recommendations based on your location, preferences, and available time.
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 justify-center">
                 <Link href="/discover" className="btn-primary">
                   Start Exploring
                 </Link>
@@ -28,17 +28,7 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-            <div className="flex justify-center">
-              <div className="relative w-full max-w-md aspect-square">
-                <Image
-                  src="/hero-image.jpg"
-                  alt="People enjoying leisure activities"
-                  fill
-                  className="object-cover rounded-lg shadow-xl"
-                  priority
-                />
-              </div>
-            </div>
+
           </div>
         </div>
       </section>
