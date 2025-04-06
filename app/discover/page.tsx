@@ -575,8 +575,9 @@ export default function DiscoverPage() {
                 />
               </div>
               
-              {/* Location Change with Google Maps */}
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              {/* Location Change with Google Maps - only shown in list view */}
+              {activeView === 'list' && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <h4 className="text-md font-medium text-gray-800 mb-2">
                   Current Location: {mapCenter.lat.toFixed(4)}, {mapCenter.lng.toFixed(4)}
                 </h4>
@@ -683,6 +684,7 @@ export default function DiscoverPage() {
                   )}
                 </div>
               </div>
+              )}
             </div>
             
             {/* Only show filters in list view */}

@@ -77,8 +77,8 @@ const SaveActivityButton: React.FC<SaveActivityButtonProps> = ({
       onClick={handleToggleSave}
       className={`flex items-center justify-center transition-colors ${
         isSaved 
-          ? 'text-primary-600 hover:text-primary-800' 
-          : 'text-gray-600 hover:text-primary-600'
+          ? 'text-primary-700 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300 font-medium' 
+          : 'text-gray-800 dark:text-gray-200 hover:text-primary-700 dark:hover:text-primary-400 font-medium'
       } ${className}`}
       aria-label={isSaved ? 'Unsave activity' : 'Save activity'}
     >

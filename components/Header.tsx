@@ -9,11 +9,11 @@ export default function Header() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-200">
+    <header className="bg-white dark:bg-gray-900 shadow-md border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
       <div className="container py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-primary-600 dark:text-primary-400">Leisure Navigator</span>
+            <span className="text-xl font-bold text-primary-700 dark:text-primary-300">Leisure Navigator</span>
           </Link>
 
           {/* Mobile menu button */}
@@ -38,21 +38,21 @@ export default function Header() {
 
           {/* Desktop navigation */}
           <nav className="hidden md:flex md:items-center md:space-x-6">
-            <Link href="/" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/" className="text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Home
             </Link>
-            <Link href="/discover" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/discover" className="text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Discover
             </Link>
-            <Link href="/saved" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/saved" className="text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Saved
             </Link>
-            <Link href="/profile" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/profile" className="text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Profile
             </Link>
             <button 
               onClick={toggleTheme} 
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 border border-gray-300 dark:border-gray-600"
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? (
@@ -71,21 +71,21 @@ export default function Header() {
         {/* Mobile menu */}
         {isMenuOpen && (
           <nav className="flex flex-col mt-4 space-y-2 md:hidden">
-            <Link href="/" className="py-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/" className="py-2 text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Home
             </Link>
-            <Link href="/discover" className="py-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/discover" className="py-2 text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Discover
             </Link>
-            <Link href="/saved" className="py-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/saved" className="py-2 text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Saved
             </Link>
-            <Link href="/profile" className="py-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+            <Link href="/profile" className="py-2 text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
               Profile
             </Link>
             <button 
               onClick={toggleTheme} 
-              className="flex items-center py-2 text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400"
+              className="flex items-center py-2 text-gray-800 dark:text-gray-100 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
               aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? (

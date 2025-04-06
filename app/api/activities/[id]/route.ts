@@ -34,6 +34,41 @@ export async function GET(
       console.error('API route: Error fetching from mock data:', mockErr);
     }
     
+    // If we have a Google Places ID (typically starts with 'ChI'), attempt to create a dynamic activity
+    if (id.startsWith('ChI')) {
+      console.log('API route: Creating dynamic activity for Google Places ID:', id);
+      try {
+        // Create a fallback generic activity for the Google Places ID
+        const dynamicActivity: LeisureActivity = {
+          id: id,
+          title: `Point of Interest`,
+          description: `This is a point of interest from Google Places. More details will be available soon.`,
+          type: 'other', // Using 'other' as a fallback type since we don't know the specific type yet
+          location: {
+            address: 'Check in Google Maps',
+            coordinates: { lat: 0, lng: 0 }
+          },
+          schedule: {
+            startDate: new Date().toISOString(),
+            endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+            recurring: false
+          },
+          rating: 4.5,
+          tags: ['attraction', 'point_of_interest'],
+          price: { isFree: false, cost: 0 },
+          contactInfo: {},
+          images: []
+        };
+        
+        return NextResponse.json({
+          data: dynamicActivity,
+          source: 'google_places'
+        });
+      } catch (placeErr) {
+        console.error('API route: Error creating dynamic activity for Places ID:', placeErr);
+      }
+    }
+    
     // If we have a generated ID, attempt to create a dynamic activity
     if (id.startsWith('generated-')) {
       console.log('API route: Creating dynamic activity for generated ID:', id);

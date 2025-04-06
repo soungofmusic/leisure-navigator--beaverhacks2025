@@ -29,6 +29,16 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
   // The image URL to display - use dynamic URL if available, fallback if not, placeholder if error
   const displayImageUrl = imageError ? '/placeholder.jpg' : (dynamicImageUrl || fallbackImageUrl);
   
+  // Make sure the URL is absolute for Next.js Image component
+  const ensureAbsoluteUrl = (url: string) => {
+    // If it's already an absolute URL with http/https, return it as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // If it's a relative URL starting with /, make it absolute to the base URL
+    return url;
+  };
+  
   // Handle image load error
   const handleImageError = () => {
     console.log('Image error occurred, using placeholder image');
@@ -75,12 +85,12 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
   }, [activity.title, activity.location.address]);
 
   return (
-    <div className="overflow-hidden transition-shadow bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg dark:shadow-gray-900">
+    <div className="overflow-hidden transition-shadow bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg dark:shadow-gray-900 border border-gray-200 dark:border-gray-700">
       <div className="relative h-48">
         {(activity.images && activity.images.length > 0) || dynamicImageUrl ? (
           <div className="relative w-full h-full">
             <Image
-              src={displayImageUrl}
+              src={ensureAbsoluteUrl(displayImageUrl)}
               alt={activity.title}
               fill
               className="object-cover"
@@ -91,17 +101,22 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
             />
           </div>
         ) : (
-          <div className="flex items-center justify-center w-full h-full bg-gray-200 dark:bg-gray-700">
-            <span className="text-gray-500 dark:text-gray-400">No image available</span>
+          <div className="relative flex items-center justify-center w-full h-full bg-gray-200 dark:bg-gray-700">
+            <span className="text-gray-600 dark:text-gray-300 font-medium z-10">No image available</span>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-16 h-16 text-gray-400 dark:text-gray-600 opacity-20">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+            </div>
           </div>
         )}
-        <div className="absolute top-2 right-2 px-2 py-1 text-xs font-medium text-white rounded-full bg-primary-600 dark:bg-primary-500">
+        <div className="absolute top-2 right-2 px-2 py-1 text-xs font-bold text-white rounded-full bg-primary-700 dark:bg-primary-600 shadow-sm">
           {activity.type}
         </div>
       </div>
       
       <div className="p-4">
-        <h3 className="mb-1 text-lg font-semibold dark:text-white">{activity.title}</h3>
+        <h3 className="mb-1 text-lg font-bold text-gray-900 dark:text-white">{activity.title}</h3>
         
         <div className="flex items-center mb-2 text-sm text-gray-600 dark:text-gray-400">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
@@ -112,7 +127,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
         </div>
         
         <div className="relative mb-3">
-          <p className="h-12 overflow-hidden text-sm text-gray-700 dark:text-gray-300">
+          <p className="h-12 overflow-hidden text-sm text-gray-800 dark:text-gray-200">
             {activity.description.length > 100
               ? `${activity.description.substring(0, 100)}...`
               : activity.description}
@@ -160,13 +175,13 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
           {activity.tags.slice(0, 3).map((tag, index) => (
             <span
               key={index}
-              className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full"
+              className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-600"
             >
               {tag}
             </span>
           ))}
           {activity.tags.length > 3 && (
-            <span className="px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-full">
+            <span className="px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-600">
               +{activity.tags.length - 3}
             </span>
           )}
@@ -175,14 +190,14 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
         <div className="flex flex-col space-y-2">
           <Link 
             href={`/activities/${activity.id}`} 
-            className="block w-full py-2 text-sm font-medium text-center text-white rounded bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600"
+            className="block w-full py-2 text-sm font-bold text-center text-white rounded bg-primary-700 hover:bg-primary-800 dark:bg-primary-600 dark:hover:bg-primary-700 shadow-sm"
           >
             View Details
           </Link>
           <SaveActivityButton 
             activityId={activity.id} 
             buttonStyle="full" 
-            className="py-2 text-sm font-medium border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300"
+            className="py-2 text-sm font-medium border-2 border-gray-400 dark:border-gray-500 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 shadow-sm"
           />
         </div>
       </div>

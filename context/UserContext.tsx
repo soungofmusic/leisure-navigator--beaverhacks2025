@@ -2,13 +2,19 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserPreferences } from '../types';
+import { auth, db, doc, getDoc, setDoc, onAuthStateChanged, signInWithGoogle, logoutUser } from '../lib/firebase';
+import type { User } from '../lib/firebase';
 
 interface UserContextType {
+  user: User | null;
+  loading: boolean;
   preferences: UserPreferences;
   updatePreferences: (preferences: UserPreferences) => void;
   saveActivity: (activityId: string) => void;
   unsaveActivity: (activityId: string) => void;
   isActivitySaved: (activityId: string) => boolean;
+  signIn: () => Promise<User | null>;
+  signOut: () => Promise<void>;
 }
 
 const defaultPreferences: UserPreferences = {
@@ -25,28 +31,84 @@ interface UserProviderProps {
 }
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences);
 
-  // Load preferences from localStorage on initial render
+  // Handle authentication state changes
   useEffect(() => {
-    try {
-      const storedPreferences = localStorage.getItem('userPreferences');
-      if (storedPreferences) {
-        setPreferences(JSON.parse(storedPreferences));
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      setLoading(true);
+      if (authUser) {
+        setUser(authUser);
+        // Load user preferences from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', authUser.uid));
+          if (userDoc.exists() && userDoc.data().preferences) {
+            setPreferences(userDoc.data().preferences as UserPreferences);
+          } else {
+            // If no preferences in Firestore, check localStorage
+            try {
+              const storedPreferences = localStorage.getItem('userPreferences');
+              if (storedPreferences) {
+                const parsedPrefs = JSON.parse(storedPreferences);
+                setPreferences(parsedPrefs);
+                // Save localStorage preferences to Firestore
+                await setDoc(doc(db, 'users', authUser.uid), {
+                  preferences: parsedPrefs,
+                  email: authUser.email,
+                  lastUpdated: new Date().toISOString()
+                }, { merge: true });
+              }
+            } catch (localError) {
+              console.error('Failed to load user preferences from localStorage:', localError);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load user preferences from Firestore:', error);
+        }
+      } else {
+        setUser(null);
+        // Load preferences from localStorage when not authenticated
+        try {
+          const storedPreferences = localStorage.getItem('userPreferences');
+          if (storedPreferences) {
+            setPreferences(JSON.parse(storedPreferences));
+          }
+        } catch (error) {
+          console.error('Failed to load user preferences from localStorage:', error);
+        }
       }
-    } catch (error) {
-      console.error('Failed to load user preferences from localStorage:', error);
-    }
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
-  // Save preferences to localStorage whenever they change
+  // Save preferences to storage (Firestore if authenticated, localStorage always)
   useEffect(() => {
     try {
+      // Always save to localStorage as fallback
       localStorage.setItem('userPreferences', JSON.stringify(preferences));
+      
+      // If authenticated, also save to Firestore
+      if (user) {
+        const saveToFirestore = async () => {
+          try {
+            await setDoc(doc(db, 'users', user.uid), {
+              preferences,
+              lastUpdated: new Date().toISOString()
+            }, { merge: true });
+          } catch (error) {
+            console.error('Failed to save user preferences to Firestore:', error);
+          }
+        };
+        saveToFirestore();
+      }
     } catch (error) {
-      console.error('Failed to save user preferences to localStorage:', error);
+      console.error('Failed to save user preferences:', error);
     }
-  }, [preferences]);
+  }, [preferences, user]);
 
   const updatePreferences = (newPreferences: UserPreferences) => {
     setPreferences(newPreferences);
@@ -75,12 +137,34 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     return preferences.savedActivities.includes(activityId);
   };
 
+  const signIn = async () => {
+    try {
+      const user = await signInWithGoogle();
+      return user;
+    } catch (error) {
+      console.error('Error signing in:', error);
+      return null;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   const value = {
+    user,
+    loading,
     preferences,
     updatePreferences,
     saveActivity,
     unsaveActivity,
-    isActivitySaved
+    isActivitySaved,
+    signIn,
+    signOut
   };
 
   return (

@@ -186,15 +186,7 @@ const MultimodalSearch: React.FC<MultimodalSearchProps> = ({ onSearch, location 
   
   return (
     <div className="w-full max-w-3xl">
-      {location && (
-        <div className="mb-2 text-xs text-primary-600 dark:text-primary-400 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-1">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-          </svg>
-          <span>Using location: ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})</span>
-        </div>
-      )}
+      {/* Location is being used for search but display is handled by parent component */}
       <form onSubmit={handleTextSearch} className="relative">
         <div className="relative">
           {/* Main input field */}
