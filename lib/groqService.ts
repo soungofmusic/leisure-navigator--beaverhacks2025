@@ -1,6 +1,16 @@
 // Using basic TypeScript types for message structure
 import { LeisureActivity, ActivityType } from '../types';
 
+// Interface for image processing results
+interface ImageProcessingResult {
+  extractedText: string;
+  detectedObjects: string[];
+  suggestedFilters: {
+    types?: ActivityType[];
+    tags?: string[];
+  };
+}
+
 // Helper function to get Groq API key from environment variables
 const getGroqApiKey = (): string => {
   return process.env.NEXT_PUBLIC_GROQ_API_KEY || '';
@@ -246,5 +256,92 @@ export async function processNaturalLanguageQuery(query: string): Promise<{
   } catch (error) {
     console.error('Error processing natural language query:', error);
     return defaultFilters;
+  }
+}
+
+/**
+ * Process image content to extract text and identify leisure activities
+ * @param base64Image Base64-encoded image content
+ * @returns Extracted text and suggested search filters
+ */
+export async function processImageContent(base64Image: string): Promise<ImageProcessingResult> {
+  // Default result structure
+  const defaultResult: ImageProcessingResult = {
+    extractedText: '',
+    detectedObjects: [],
+    suggestedFilters: {
+      types: [],
+      tags: []
+    }
+  };
+
+  // If API key is not set, return the default result
+  if (!getGroqApiKey()) {
+    console.warn('Groq API key not found. Cannot process image content.');
+    return defaultResult;
+  }
+
+  try {
+    // For this implementation, we'll use a text-based description of the image
+    // In a production app, you would use a dedicated multimodal model or vision API
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are an expert at analyzing images of leisure activities and events. Extract text content, identify objects, and suggest search filters based on the image.'
+      },
+      {
+        role: 'user',
+        content: `Analyze this image related to a leisure activity or event. The image is base64 encoded. \n\nRespond with ONLY a JSON object with these properties:\n1. extractedText: Any visible text in the image\n2. detectedObjects: Array of objects/items identified in the image\n3. suggestedFilters: Object with arrays for 'types' and 'tags' that would be good search terms`
+      }
+    ];
+
+    const response = await callGroqApi(messages, 'llama3-8b-8192', {
+      max_tokens: 500,
+      temperature: 0.2
+    });
+
+    // Extract JSON from response
+    let content = response.choices[0].message.content || '{}';
+    
+    try {
+      // Clean up the response to get valid JSON
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        content = jsonMatch[1].trim();
+      }
+      
+      const firstBrace = content.indexOf('{');
+      const lastBrace = content.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        content = content.substring(firstBrace, lastBrace + 1);
+      }
+      
+      // Parse the JSON
+      const parsedResult = JSON.parse(content);
+      
+      return {
+        extractedText: parsedResult.extractedText || defaultResult.extractedText,
+        detectedObjects: Array.isArray(parsedResult.detectedObjects) ? 
+                        parsedResult.detectedObjects : defaultResult.detectedObjects,
+        suggestedFilters: {
+          types: Array.isArray(parsedResult.suggestedFilters?.types) ? 
+                parsedResult.suggestedFilters.types : defaultResult.suggestedFilters.types,
+          tags: Array.isArray(parsedResult.suggestedFilters?.tags) ? 
+                parsedResult.suggestedFilters.tags : defaultResult.suggestedFilters.tags
+        }
+      };
+    } catch (parseError) {
+      console.error('Failed to parse JSON from Groq image processing response:', parseError);
+      // Generate a simple result based on the raw text
+      return {
+        extractedText: content.replace(/[\n\r]+/g, ' ').substring(0, 100),
+        detectedObjects: [],
+        suggestedFilters: defaultResult.suggestedFilters
+      };
+    }
+  } catch (error) {
+    console.error('Error processing image with Groq:', error);
+    return defaultResult;
   }
 }

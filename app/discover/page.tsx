@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchActivities } from '../../lib/mockData';
 import { LeisureActivity, ActivityType } from '../../types';
 import SearchFilters from '../../components/SearchFilters';
-import NaturalLanguageSearch from '../../components/NaturalLanguageSearch';
+import MultimodalSearch from '../../components/MultimodalSearch';
 import ActivityCard from '../../components/ActivityCard';
 import GoogleMapsIntegration from '../../components/GoogleMapsIntegration';
 import { useUser } from '../../context/UserContext';
@@ -134,9 +134,14 @@ export default function DiscoverPage() {
         {/* Sidebar with filters */}
         <div className="lg:col-span-1">
           <div className="p-4 bg-white rounded-lg shadow-md">
-            <div className="mb-4">
-              <h2 className="mb-2 text-lg font-semibold">Search with AI</h2>
-              <NaturalLanguageSearch onSearch={handleSearch} />
+            <div className="mb-6">
+              <h3 className="mb-2 text-lg font-medium text-gray-900">
+                Search Activities
+              </h3>
+              <p className="text-sm text-gray-600 mb-2">
+                Search using text, voice commands, or snap a photo
+              </p>
+              <MultimodalSearch onSearch={handleSearch} />
               <div className="mt-2 p-2 bg-gray-50 rounded-md">
                 <p className="text-xs text-gray-600">Try searches like:</p>
                 <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
