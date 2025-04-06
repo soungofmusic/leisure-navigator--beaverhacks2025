@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { LeisureActivity } from '@/types';
+import { LeisureActivity } from '../types';
 import SaveActivityButton from './SaveActivityButton';
 
 interface ActivityCardProps {
@@ -23,12 +23,29 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
     <div className="overflow-hidden transition-shadow bg-white rounded-lg shadow-md hover:shadow-lg">
       <div className="relative h-48">
         {activity.images && activity.images.length > 0 ? (
-          <Image
-            src={activity.images[0]}
-            alt={activity.title}
-            fill
-            className="object-cover"
-          />
+          <div className="relative w-full h-full">
+            <Image
+              src={activity.images[0]}
+              alt={activity.title}
+              fill
+              className="object-cover"
+              unoptimized
+              onError={(e) => {
+                // When image fails to load, replace with placeholder
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loop
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.classList.add('bg-gray-200', 'flex', 'items-center', 'justify-center');
+                  const placeholder = document.createElement('span');
+                  placeholder.textContent = activity.title;
+                  placeholder.className = 'text-gray-500 p-4 text-center';
+                  parent.appendChild(placeholder);
+                }
+              }}
+            />
+          </div>
         ) : (
           <div className="flex items-center justify-center w-full h-full bg-gray-200">
             <span className="text-gray-500">No image available</span>
