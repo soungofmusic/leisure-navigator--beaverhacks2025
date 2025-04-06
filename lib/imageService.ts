@@ -6,12 +6,30 @@
  * @returns Promise with the image URL or null if not found
  */
 export async function getGoogleImageUrl(searchTerm: string): Promise<string | null> {
+  // If no search term provided, return placeholder immediately
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return getPlaceholderImageUrl("default");
+  }
+
   // Get API key and Search Engine ID from environment variables
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_CUSTOM_SEARCH_API_KEY;
   const searchEngineId = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_ENGINE_ID;
   
+  // If API keys aren't available, use placeholder without error logging
+  // This prevents excessive console errors
   if (!apiKey || !searchEngineId) {
-    console.error('Google Custom Search API key or Search Engine ID not found');
+    // Safe way to check if we're in the browser
+    if (typeof window !== 'undefined') {
+      // @ts-ignore: Add a property to the window object
+      if (!window.hasLoggedApiKeyError) {
+        console.warn('Google Custom Search API key or Search Engine ID not found, using placeholders');
+        // @ts-ignore: Adding a property to the window object
+        window.hasLoggedApiKeyError = true;
+      }
+    } else {
+      // Running on server
+      console.warn('Google Custom Search API key or Search Engine ID not found, using placeholders');
+    }
     return getPlaceholderImageUrl(searchTerm);
   }
   
@@ -19,9 +37,16 @@ export async function getGoogleImageUrl(searchTerm: string): Promise<string | nu
   const encodedSearchTerm = encodeURIComponent(searchTerm);
   
   try {
+    // Add timeout to avoid long-running requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
     const response = await fetch(
-      `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodedSearchTerm}&searchType=image&num=1`
+      `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${searchEngineId}&q=${encodedSearchTerm}&searchType=image&num=1`,
+      { signal: controller.signal }
     );
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       throw new Error(`Google Custom Search API error: ${response.status}`);
@@ -33,11 +58,25 @@ export async function getGoogleImageUrl(searchTerm: string): Promise<string | nu
     if (data.items && data.items.length > 0) {
       return data.items[0].link;
     } else {
-      console.warn(`No image results found for search term: ${searchTerm}`);
+      // Use placeholder without excessive logging
       return getPlaceholderImageUrl(searchTerm);
     }
   } catch (error) {
-    console.error('Error fetching image from Google Custom Search API:', error);
+    // Check if it's an abort error (timeout)
+    if (error.name === 'AbortError') {
+      console.warn(`Google image search timed out for: ${searchTerm}`);
+    } else if (typeof window !== 'undefined') {
+      // @ts-ignore: Check property on window object
+      if (!window.hasLoggedApiError) {
+        // Only log API errors once per session to avoid console spam
+        console.error('Error fetching image from Google Custom Search API. Further errors will be suppressed.');
+        // @ts-ignore: Adding a property to the window object
+        window.hasLoggedApiError = true;
+      }
+    } else {
+      // Running on server
+      console.error('Error fetching image from Google Custom Search API:', error);
+    }
     return getPlaceholderImageUrl(searchTerm);
   }
 }

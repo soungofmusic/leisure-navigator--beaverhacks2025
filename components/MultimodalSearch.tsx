@@ -191,29 +191,29 @@ const MultimodalSearch: React.FC<MultimodalSearchProps> = ({ onSearch }) => {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Describe what you're looking for..."
-            className="w-full px-4 py-3 pr-24 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            placeholder=""
+            className="w-full px-4 py-3 pr-48 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             disabled={isProcessing || isListening}
           />
           
           {/* Input mode buttons */}
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex space-x-1">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-3">
             {/* Voice input button */}
             {hasSpeechRecognition && (
               <button
                 type="button"
                 onClick={startVoiceRecognition}
                 disabled={isProcessing || isListening}
-                className="p-2 text-gray-500 hover:text-primary-600 focus:outline-none"
+                className="text-gray-500 hover:text-primary-600 focus:outline-none flex items-center justify-center w-8 h-8"
                 data-tooltip-id="voice-tooltip"
                 data-tooltip-content="Search by voice"
               >
                 {isListening ? (
-                  <span className="flex items-center justify-center w-6 h-6">
+                  <span className="flex items-center justify-center">
                     <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
                   </span>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 )}
@@ -225,11 +225,11 @@ const MultimodalSearch: React.FC<MultimodalSearchProps> = ({ onSearch }) => {
               type="button"
               onClick={triggerImageUpload}
               disabled={isProcessing}
-              className="p-2 text-gray-500 hover:text-primary-600 focus:outline-none"
+              className="text-gray-500 hover:text-primary-600 focus:outline-none flex items-center justify-center w-8 h-8"
               data-tooltip-id="image-tooltip"
               data-tooltip-content="Search by image"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </button>
@@ -247,7 +247,7 @@ const MultimodalSearch: React.FC<MultimodalSearchProps> = ({ onSearch }) => {
             <button
               type="submit"
               disabled={isProcessing || isListening || !query.trim()}
-              className="px-3 py-1 ml-1 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-400 focus:outline-none"
+              className="px-4 py-1.5 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-400 focus:outline-none"
             >
               {isProcessing ? (
                 <div className="flex items-center">
@@ -255,7 +255,7 @@ const MultimodalSearch: React.FC<MultimodalSearchProps> = ({ onSearch }) => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>AI</span>
+                  <span>Search</span>
                 </div>
               ) : (
                 <span>Search</span>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { fetchActivities } from '../../lib/mockData';
+// Now using API endpoint instead of mock data
 import { LeisureActivity, ActivityType } from '../../types';
 import SearchFilters from '../../components/SearchFilters';
 import MultimodalSearch from '../../components/MultimodalSearch';
@@ -12,6 +12,7 @@ import { useUser } from '../../context/UserContext';
 export default function DiscoverPage() {
   const { preferences } = useUser();
   const [activities, setActivities] = useState<LeisureActivity[]>([]);
+  const [activeFilters, setActiveFilters] = useState<{ types: ActivityType[] }>({ types: [] });
   const [filteredActivities, setFilteredActivities] = useState<LeisureActivity[]>([]);
   const [displayedActivities, setDisplayedActivities] = useState<LeisureActivity[]>([]);
   const [visibleCount, setVisibleCount] = useState(10); // Initially show 10 activities
@@ -25,6 +26,8 @@ export default function DiscoverPage() {
       lng: -122.6784, // Portland, OR
     }
   );
+  const [searchRadius, setSearchRadius] = useState<number>(10000); // Default 10km radius
+  const [sortOption, setSortOption] = useState<'rating' | 'reviewCount' | null>(null);
 
   // Update displayed activities when filtered activities or visible count changes
   useEffect(() => {
@@ -36,14 +39,164 @@ export default function DiscoverPage() {
     const loadActivities = async () => {
       try {
         setLoading(true);
-        const data = await fetchActivities();
-        setActivities(data);
-        setFilteredActivities(data);
+        console.log('Fetching activities from API...');
+        
+        // Create query params with location if available
+        const queryParams = new URLSearchParams();
+        
+        // Include location parameters if available
+        if (preferences.location && preferences.location.lat) {
+          console.log('Using user preferred location for initial search');
+          queryParams.set('lat', preferences.location.lat.toString());
+          queryParams.set('lng', preferences.location.lng.toString());
+          queryParams.set('radius', searchRadius.toString());
+        } else {
+          console.log('Using default Portland location for initial search');
+          queryParams.set('lat', mapCenter.lat.toString());
+          queryParams.set('lng', mapCenter.lng.toString());
+          queryParams.set('radius', searchRadius.toString());
+        }
+        
+        // Use fetch to call our API endpoint with location parameters
+        const response = await fetch(`/api/activities?${queryParams.toString()}`);
+        console.log('API response status:', response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('API response data:', result);
+        
+        let data = result.data || [];
+        console.log(`Received ${data.length} activities`);
+        
+        // Apply sorting if needed
+        if (sortOption && data.length > 0) {
+          if (sortOption === 'rating') {
+            data.sort((a, b) => {
+              // Safely access rating property or fall back to 0
+              const ratingA = a.googleDetails?.rating ?? a.rating ?? 0;
+              const ratingB = b.googleDetails?.rating ?? b.rating ?? 0;
+              return ratingB - ratingA;
+            });
+          } else if (sortOption === 'reviewCount') {
+            data.sort((a, b) => {
+              // Safely access review counts or fall back to 0
+              const countA = a.googleDetails?.userRatingsTotal ?? 0;
+              const countB = b.googleDetails?.userRatingsTotal ?? 0;
+              return countB - countA;
+            });
+          }
+        }
+        
+        if (data.length === 0) {
+          console.warn('No activities returned from API, using emergency fallback data');
+          // Emergency fallback to basic data so the UI isn't empty
+          const fallbackData: LeisureActivity[] = [
+            {
+              id: 'fallback-1',
+              title: 'Portland Japanese Garden',
+              description: 'A traditional Japanese garden with beautiful views of Mt. Hood.',
+              type: 'outdoor',
+              location: {
+                address: '611 SW Kingston Ave, Portland, OR 97205',
+                coordinates: { lat: 45.5188, lng: -122.7060 }
+              },
+              schedule: {
+                startDate: new Date().toISOString(),
+                endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                recurring: true,
+                recurrencePattern: 'Daily, 9:00 AM - 5:00 PM'
+              },
+              price: {
+                isFree: false,
+                cost: 18.95,
+                currency: 'USD'
+              },
+              contactInfo: {
+                phone: '503-223-1321',
+                website: 'https://japanesegarden.org'
+              },
+              rating: 4.8,
+              images: ['/placeholder-image.jpg'],
+              tags: ['garden', 'japanese', 'outdoor']
+            },
+            {
+              id: 'fallback-2',
+              title: 'Powell\'s City of Books',
+              description: 'The largest independent new and used bookstore in the world.',
+              type: 'indoor',
+              location: {
+                address: '1005 W Burnside St, Portland, OR 97209',
+                coordinates: { lat: 45.5231, lng: -122.6822 }
+              },
+              schedule: {
+                startDate: new Date().toISOString(),
+                endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+                recurring: true,
+                recurrencePattern: 'Daily, 9:00 AM - 11:00 PM'
+              },
+              price: {
+                isFree: true,
+                cost: 0,
+                currency: 'USD'
+              },
+              contactInfo: {
+                phone: '800-878-7323',
+                website: 'https://www.powells.com'
+              },
+              rating: 4.9,
+              images: ['/placeholder-image.jpg'],
+              tags: ['books', 'shopping', 'indoor']
+            }
+          ];
+          setActivities(fallbackData);
+          setFilteredActivities(fallbackData);
+        } else {
+          setActivities(data);
+          setFilteredActivities(data);
+        }
+        
         // Reset visible count when loading new activities
         setVisibleCount(10);
       } catch (err) {
         setError('Failed to load activities. Please try again later.');
-        console.error(err);
+        console.error('Error loading activities:', err);
+        
+        // Provide fallback data even on error so UI isn't empty
+        const fallbackData: LeisureActivity[] = [
+          {
+            id: 'error-fallback-1',
+            title: 'Error loading activities',
+            description: 'Please try again later or contact support.',
+            type: 'other',
+            location: {
+              address: 'Portland, OR',
+              coordinates: { lat: 45.5152, lng: -122.6784 }
+            },
+            schedule: {
+              startDate: new Date().toISOString(),
+              endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+              recurring: false,
+              recurrencePattern: ''
+            },
+            price: {
+              isFree: true,
+              cost: 0,
+              currency: 'USD'
+            },
+            contactInfo: {
+              phone: '',
+              website: ''
+            },
+            rating: 0,
+            images: ['/placeholder-image.jpg'],
+            tags: ['error']
+          }
+        ];
+        setActivities(fallbackData);
+        setFilteredActivities(fallbackData);
       } finally {
         setLoading(false);
       }
@@ -57,6 +210,114 @@ export default function DiscoverPage() {
     setVisibleCount(prevCount => prevCount + 5); // Load 5 more activities
   };
 
+  // Handle marker click
+  const handleMarkerClick = (activityId: string) => {
+    setSelectedActivityId(activityId);
+    const activity = activities.find(a => a.id === activityId);
+    if (activity) {
+      setMapCenter(activity.location.coordinates);
+    }
+  };
+
+  // Handle sorting change
+  const handleSortChange = (option: 'rating' | 'reviewCount' | null) => {
+    setSortOption(option);
+    
+    // Sort the current activities without fetching new ones
+    if (activities.length > 0) {
+      let sortedActivities = [...activities];
+      
+      if (option === 'rating') {
+        // Sort by rating (highest first)
+        sortedActivities.sort((a, b) => {
+          // Fall back to rating property if googleDetails not available
+          const ratingA = a.googleDetails?.rating || a.rating || 0;
+          const ratingB = b.googleDetails?.rating || b.rating || 0;
+          return ratingB - ratingA;
+        });
+      } else if (option === 'reviewCount') {
+        // Sort by number of reviews (highest first)
+        sortedActivities.sort((a, b) => {
+          // Safely access review counts or fall back to 0
+          const countA = a.googleDetails?.userRatingsTotal || 0;
+          const countB = b.googleDetails?.userRatingsTotal || 0;
+          return countB - countA;
+        });
+      }
+      
+      setFilteredActivities(sortedActivities);
+      setDisplayedActivities(sortedActivities.slice(0, visibleCount));
+    }
+  };
+  
+  // Handle area search from map
+  const handleAreaSearch = async ({ center, radius }: { center: { lat: number; lng: number }; radius: number }) => {
+    try {
+      // Update map center and search radius
+      setMapCenter(center);
+      setSearchRadius(radius);
+      
+      console.log(`Searching area around ${center.lat}, ${center.lng} with radius ${radius}m`);
+      
+      // Start loading
+      setLoading(true);
+      
+      // Fetch activities for the selected area
+      const queryParams = new URLSearchParams({
+        lat: center.lat.toString(),
+        lng: center.lng.toString(),
+        radius: radius.toString()
+      });
+      
+      // Add any active filters
+      if (activeFilters && activeFilters.types && activeFilters.types.length > 0) {
+        activeFilters.types.forEach(type => queryParams.append('type', type));
+      }
+      
+      // Make the API request with the new location parameters
+      const response = await fetch(`/api/activities?${queryParams.toString()}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      const result = await response.json();
+      const data = result.data || [];
+      
+      // Sort data if a sort option is selected
+      let processedData = [...data];
+      
+      if (sortOption === 'rating') {
+        processedData.sort((a, b) => {
+          // Fall back to rating property if googleDetails not available
+          const ratingA = a.googleDetails?.rating || a.rating || 0;
+          const ratingB = b.googleDetails?.rating || b.rating || 0;
+          return ratingB - ratingA;
+        });
+      } else if (sortOption === 'reviewCount') {
+        processedData.sort((a, b) => {
+          // Safely access review counts or fall back to 0
+          const countA = a.googleDetails?.userRatingsTotal || 0;
+          const countB = b.googleDetails?.userRatingsTotal || 0;
+          return countB - countA;
+        });
+      }
+      
+      // Update activities with the new data
+      setActivities(data);
+      setFilteredActivities(processedData);
+      setDisplayedActivities(processedData.slice(0, visibleCount));
+      
+      // Display a message about the search
+      alert(`Found ${data.length} activities near this area!`);
+    } catch (error) {
+      console.error('Error searching area:', error);
+      setError('Failed to search this area. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle search queries (supports both traditional and AI-powered searches)
   const handleSearch = async (filters: {
     types?: ActivityType[];
@@ -66,8 +327,29 @@ export default function DiscoverPage() {
   }) => {
     try {
       setLoading(true);
-      const data = await fetchActivities(filters);
-      setFilteredActivities(data);
+      
+      // Build URL parameters
+      const params = new URLSearchParams();
+      
+      // Add query parameter if it exists
+      if (filters.query) {
+        params.append('query', filters.query);
+      }
+      
+      // Add type parameters if they exist
+      if (filters.types && filters.types.length > 0) {
+        filters.types.forEach(type => params.append('type', type));
+      }
+      
+      // Call the API with the constructed URL
+      const response = await fetch(`/api/activities?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      const result = await response.json();
+      setFilteredActivities(result.data || []);
+      
       // Reset visible count when search terms change
       setVisibleCount(10);
     } catch (err) {
@@ -93,20 +375,36 @@ export default function DiscoverPage() {
         setMapCenter(filters.location);
       }
       
-      // Convert price range to min/max format for the API
-      const priceRangeForApi = {
-        min: 0,
-        max: filters.priceRange
-      };
+      // Build URL parameters
+      const params = new URLSearchParams();
       
-      const data = await fetchActivities({
-        type: filters.types.length > 0 ? filters.types : undefined,
-        priceRange: priceRangeForApi,
-        distance: filters.distance,
-        location: filters.location,
-      });
+      // Add type parameters if they exist
+      if (filters.types.length > 0) {
+        filters.types.forEach(type => params.append('type', type));
+      }
       
+      // Add location parameters if they exist
+      if (filters.location) {
+        params.append('lat', filters.location.lat.toString());
+        params.append('lng', filters.location.lng.toString());
+      }
+      
+      // Add radius parameter (convert miles to meters)
+      if (filters.distance) {
+        params.append('radius', (filters.distance * 1609.34).toString());
+      }
+      
+      // Call the API with the constructed URL
+      const response = await fetch(`/api/activities?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      const result = await response.json();
+      const data = result.data || [];
+      setActivities(data);
       setFilteredActivities(data);
+      
       // Reset visible count when filters change
       setVisibleCount(10);
     } catch (err) {
@@ -117,18 +415,31 @@ export default function DiscoverPage() {
     }
   };
 
-  // Handle marker click
-  const handleMarkerClick = (activityId: string) => {
-    setSelectedActivityId(activityId);
-    const activity = activities.find(a => a.id === activityId);
-    if (activity) {
-      setMapCenter(activity.location.coordinates);
-    }
-  };
-
   return (
     <div className="container py-8">
-      <h1 className="mb-6 text-3xl font-bold">Discover Activities</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Discover Activities</h1>
+        
+        {/* Sorting controls in top right */}
+        <div className="flex space-x-2">
+          <div className="relative inline-block">
+            <select
+              value={sortOption || ''}
+              onChange={(e) => handleSortChange(e.target.value as 'rating' | 'reviewCount' | null)}
+              className="block appearance-none w-full bg-white border border-gray-300 hover:border-gray-500 px-4 py-2 pr-8 rounded-md shadow leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">Sort Activities</option>
+              <option value="rating">Highest Rating</option>
+              <option value="reviewCount">Most Reviews</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sidebar with filters */}
@@ -136,29 +447,22 @@ export default function DiscoverPage() {
           <div className="p-4 bg-white rounded-lg shadow-md">
             <div className="mb-6">
               <h3 className="mb-2 text-lg font-medium text-gray-900">
-                Search Activities
+                Smart Search
               </h3>
               <p className="text-sm text-gray-600 mb-2">
                 Search using text, voice commands, or snap a photo
               </p>
               <MultimodalSearch onSearch={handleSearch} />
-              <div className="mt-2 p-2 bg-gray-50 rounded-md">
-                <p className="text-xs text-gray-600">Try searches like:</p>
-                <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
-                  <li>Outdoor activities for kids under $20</li>
-                  <li>Cultural experiences with food</li>
-                  <li>Evening entertainment in downtown</li>
-                </ul>
-              </div>
             </div>
-            
-            <h2 className="mb-4 text-lg font-semibold">Filters</h2>
-            <SearchFilters 
-              onSearch={(query) => handleSearch({ query })} 
-              onFilterChange={handleFilterChange}
-              defaultLocation={mapCenter}
-            />
-            
+            <div className="mb-6">
+              <h3 className="mb-2 text-lg font-medium text-gray-900">
+                Filters
+              </h3>
+              <SearchFilters 
+                onFilterChange={handleFilterChange}
+                defaultLocation={mapCenter}
+              />
+            </div>
             {/* View toggle */}
             <div className="mt-4">
               <h3 className="mb-2 font-medium">View Mode</h3>
@@ -244,6 +548,7 @@ export default function DiscoverPage() {
                     height="600px"
                     showSearch={true}
                     showCurrentLocation={true}
+                    showSearchThisArea={true}
                     markers={filteredActivities.map((activity) => ({
                       id: activity.id,
                       title: activity.title,
@@ -254,6 +559,7 @@ export default function DiscoverPage() {
                     }))}
                     center={mapCenter}
                     onMarkerClick={handleMarkerClick}
+                    onAreaSearch={handleAreaSearch}
                   />
                 </div>
               )}

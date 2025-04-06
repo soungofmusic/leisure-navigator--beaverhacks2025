@@ -304,6 +304,161 @@ export const mockLeisureActivities: LeisureActivity[] = [
     images: [getImageUrl('portland brewery')],
     rating: 4.9,
     tags: ['beer', 'brewery', 'tours', 'tastings'],
+  },
+  {
+    id: '11',
+    title: 'Portland Timbers Soccer Match',
+    description: 'Experience the electric atmosphere of a Portland Timbers soccer match at Providence Park. Join the Timbers Army fan club for an unforgettable sporting event.',
+    type: 'sports',
+    location: {
+      address: '1844 SW Morrison St, Portland, OR 97205',
+      coordinates: {
+        lat: 45.5216,
+        lng: -122.6916,
+      },
+    },
+    schedule: {
+      startDate: '2025-03-01T19:30:00',
+      endDate: '2025-10-31T22:00:00',
+      recurring: true,
+      recurrencePattern: 'Home matches on weekends, typically 7:30 PM',
+    },
+    price: {
+      isFree: false,
+      cost: 45,
+      currency: 'USD',
+    },
+    contactInfo: {
+      phone: '503-553-5400',
+      website: 'https://www.timbers.com',
+    },
+    images: [getImageUrl('portland timbers soccer')],
+    rating: 4.8,
+    tags: ['sports', 'soccer', 'live events', 'timbers'],
+  },
+  {
+    id: '12',
+    title: 'OMSI - Oregon Museum of Science and Industry',
+    description: 'Explore interactive exhibits, planetarium shows, and hands-on science demonstrations at this educational museum for all ages.',
+    type: 'educational',
+    location: {
+      address: '1945 SE Water Ave, Portland, OR 97214',
+      coordinates: {
+        lat: 45.5083,
+        lng: -122.6653,
+      },
+    },
+    schedule: {
+      startDate: '2025-01-01T09:30:00',
+      endDate: '2025-12-31T17:30:00',
+      recurring: true,
+      recurrencePattern: 'Tuesday-Sunday, 9:30 AM - 5:30 PM, Closed Mondays',
+    },
+    price: {
+      isFree: false,
+      cost: 15,
+      currency: 'USD',
+    },
+    contactInfo: {
+      phone: '503-797-4000',
+      website: 'https://omsi.edu',
+    },
+    images: [getImageUrl('oregon museum of science industry portland')],
+    rating: 4.7,
+    tags: ['museum', 'science', 'educational', 'family-friendly'],
+  },
+  {
+    id: '13',
+    title: 'Dante\'s Live Music Venue',
+    description: 'A legendary Portland nightlife destination featuring live music, performances, and dancing in an intimate venue with full bar service.',
+    type: 'nightlife',
+    location: {
+      address: '350 W Burnside St, Portland, OR 97209',
+      coordinates: {
+        lat: 45.5230,
+        lng: -122.6747,
+      },
+    },
+    schedule: {
+      startDate: '2025-01-01T20:00:00',
+      endDate: '2025-12-31T02:30:00',
+      recurring: true,
+      recurrencePattern: 'Thursday-Saturday, 8:00 PM - 2:30 AM',
+    },
+    price: {
+      isFree: false,
+      cost: 15,
+      currency: 'USD',
+    },
+    contactInfo: {
+      phone: '503-226-6630',
+      website: 'https://www.danteslive.com',
+    },
+    images: [getImageUrl('dantes live music portland')],
+    rating: 4.5,
+    tags: ['nightlife', 'live music', 'dancing', 'bar'],
+  },
+  {
+    id: '14',
+    title: 'Knot Springs Wellness Club',
+    description: 'A luxurious urban wellness retreat offering soaking pools, sauna, steam room, and massage services with panoramic views of the city.',
+    type: 'wellness',
+    location: {
+      address: '33 NE 3rd Ave, Portland, OR 97232',
+      coordinates: {
+        lat: 45.5234,
+        lng: -122.6639,
+      },
+    },
+    schedule: {
+      startDate: '2025-01-01T06:00:00',
+      endDate: '2025-12-31T22:00:00',
+      recurring: true,
+      recurrencePattern: 'Daily, 6:00 AM - 10:00 PM',
+    },
+    price: {
+      isFree: false,
+      cost: 65,
+      currency: 'USD',
+    },
+    contactInfo: {
+      phone: '503-222-5668',
+      website: 'https://www.knotsprings.com',
+    },
+    images: [getImageUrl('knot springs wellness portland')],
+    rating: 4.6,
+    tags: ['wellness', 'spa', 'relaxation', 'massage'],
+  },
+  {
+    id: '15',
+    title: 'Portland Aerial Tram',
+    description: 'A unique transportation experience offering spectacular views of Portland, Mount Hood, and the Willamette River during a scenic aerial ride.',
+    type: 'other',
+    location: {
+      address: '3303 SW Bond Ave, Portland, OR 97239',
+      coordinates: {
+        lat: 45.4999,
+        lng: -122.6712,
+      },
+    },
+    schedule: {
+      startDate: '2025-01-01T05:30:00',
+      endDate: '2025-12-31T21:30:00',
+      recurring: true,
+      recurrencePattern: 'Weekdays 5:30 AM - 9:30 PM, Weekends 9:00 AM - 5:00 PM',
+    },
+    price: {
+      isFree: false,
+      cost: 5.55,
+      currency: 'USD',
+    },
+    contactInfo: {
+      phone: '503-494-8283',
+      website: 'https://www.gobytram.com',
+    },
+    images: [getImageUrl('portland aerial tram')],
+    rating: 4.7,
+    tags: ['scenic', 'views', 'transportation', 'unique'],
   }
 ];
 
@@ -495,6 +650,7 @@ export const fetchActivities = (filters?: any): Promise<LeisureActivity[]> => {
     // Simulate network delay
     setTimeout(async () => {
       let filteredActivities = [...mockLeisureActivities];
+      const minimumResultCount = 5; // Ensure at least this many results per filter
       
       // Add location-based activities if location is provided
       if (filters && filters.location) {
@@ -530,9 +686,44 @@ export const fetchActivities = (filters?: any): Promise<LeisureActivity[]> => {
       // Apply filters if provided
       if (filters) {
         if (filters.type && filters.type.length > 0) {
+          // Filter by activity type
           filteredActivities = filteredActivities.filter(activity => 
             filters.type.includes(activity.type)
           );
+          
+          // Ensure we have at least 5 results for each selected type
+          for (const activityType of filters.type) {
+            const resultsForType = filteredActivities.filter(activity => activity.type === activityType);
+            
+            if (resultsForType.length < minimumResultCount) {
+              const additionalNeeded = minimumResultCount - resultsForType.length;
+              
+              // Generate additional activities for this type
+              const baseActivity = resultsForType[0] || mockLeisureActivities.find(a => a.type === activityType);
+              
+              if (baseActivity) {
+                for (let i = 0; i < additionalNeeded; i++) {
+                  const newActivity: LeisureActivity = {
+                    ...JSON.parse(JSON.stringify(baseActivity)),
+                    id: `generated-${activityType}-${i}`,
+                    title: `${baseActivity.title} - ${i + 1}`,
+                    description: `${baseActivity.description.split('.')[0]}. Dynamic activity based on popular demand.`,
+                    location: {
+                      ...baseActivity.location,
+                      coordinates: {
+                        lat: baseActivity.location.coordinates.lat + (Math.random() - 0.5) * 0.01,
+                        lng: baseActivity.location.coordinates.lng + (Math.random() - 0.5) * 0.01
+                      }
+                    },
+                    rating: Number((baseActivity.rating || 4.5) - 0.1 * Math.random()).toFixed(1) as unknown as number,
+                    tags: [...baseActivity.tags, 'popular']
+                  };
+                  
+                  filteredActivities.push(newActivity);
+                }
+              }
+            }
+          }
         }
         
         if (filters.query) {

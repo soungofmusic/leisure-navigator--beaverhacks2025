@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@googlemaps/google-maps-services-js": "^3.4.1",
     "@googlemaps/js-api-loader": "^1.16.2",
     "groq": "^3.82.0",
     "next": "^14.0.0",

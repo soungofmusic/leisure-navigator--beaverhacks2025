@@ -5,7 +5,7 @@ import { ActivityType } from '../types';
 import PlacesAutocomplete from './PlacesAutocomplete';
 
 interface SearchFiltersProps {
-  onSearch: (query: string) => void;
+  onSearch?: (query: string) => void;
   onFilterChange: (filters: {
     types: ActivityType[];
     priceRange: number;
@@ -41,7 +41,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(searchQuery);
+    if (onSearch) {
+      onSearch(searchQuery);
+    }
   };
 
   const handleTypeToggle = (type: ActivityType) => {
@@ -94,19 +96,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   };
 
   return (
-    <div className="p-4 space-y-4 bg-white rounded-lg shadow-md">
-      <form onSubmit={handleSearch} className="flex space-x-2">
-        <input
-          type="text"
-          placeholder="Search activities, places, or keywords..."
-          className="input"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <button type="submit" className="btn-primary">
-          Search
-        </button>
-      </form>
+    <div className="space-y-4">
+
 
       <div>
         <h3 className="mb-2 font-medium">Activity Type</h3>

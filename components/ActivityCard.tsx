@@ -7,6 +7,7 @@ import { LeisureActivity } from '../types';
 import SaveActivityButton from './SaveActivityButton';
 import AiEnhancedBadge from './AiEnhancedBadge';
 import { getGoogleImageUrl } from '../lib/imageService';
+import { getGoogleRating } from '../lib/googlePlacesService';
 
 interface ActivityCardProps {
   activity: LeisureActivity;
@@ -15,6 +16,9 @@ interface ActivityCardProps {
 const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
   const [imageError, setImageError] = useState(false);
   const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
+  const [googleRating, setGoogleRating] = useState<number | null>(null);
+  const [googleTotalRatings, setGoogleTotalRatings] = useState<number | null>(null);
+  const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   
   // Format price display
   const getPriceDisplay = () => {
@@ -57,6 +61,25 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
     
     fetchGoogleImage();
   }, [activity.title, activity.type, activity.location.address]);
+  
+  // Fetch Google ratings when component mounts
+  useEffect(() => {
+    const fetchGoogleRatings = async () => {
+      try {
+        const result = await getGoogleRating(activity.title, activity.location.address);
+        
+        if (result.rating !== null) {
+          setGoogleRating(result.rating);
+          setGoogleTotalRatings(result.totalRatings);
+          setGooglePlaceId(result.placeId);
+        }
+      } catch (error) {
+        console.error('Error fetching Google ratings:', error);
+      }
+    };
+    
+    fetchGoogleRatings();
+  }, [activity.title, activity.location.address]);
 
   return (
     <div className="overflow-hidden transition-shadow bg-white rounded-lg shadow-md hover:shadow-lg">
@@ -109,13 +132,33 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
         </div>
         
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-yellow-500">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-            </svg>
-            <span className="ml-1 text-sm font-medium">
-              {activity.rating ? activity.rating.toFixed(1) : 'N/A'}
-            </span>
+          <div className="flex items-center gap-2">
+            {/* Google rating */}
+            {googleRating !== null ? (
+              <div className="flex items-center" title={`Google rating based on ${googleTotalRatings} reviews`}>
+                <div className="flex items-center gap-1">
+                  <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5.46 8.06l-2.15-.36c-.2-.03-.35-.18-.4-.37l-.93-2.01c-.38-.81-1.56-.81-1.95 0l-.93 2.01c-.05.19-.21.34-.41.37l-2.15.36c-.85.14-1.19 1.13-.57 1.7l1.55 1.39c.15.13.22.33.17.52l-.42 2.02c-.2.84.71 1.52 1.47 1.1L12.18 15c.17-.09.37-.09.54 0l1.95 1.08c.76.42 1.67-.26 1.47-1.1l-.42-2.02c-.05-.19.02-.39.17-.52l1.55-1.39c.63-.56.29-1.55-.56-1.7z"/>
+                  </svg>
+                  <span className="text-xs font-medium text-gray-600">Google Review</span>
+                  <span className="text-sm font-medium">
+                    {googleRating.toFixed(1)}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({googleTotalRatings})
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-4 h-4 text-yellow-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+                <span className="ml-1 text-sm font-medium">
+                  {activity.rating ? activity.rating.toFixed(1) : 'N/A'}
+                </span>
+              </div>
+            )}
           </div>
           <span className="text-sm font-semibold text-primary-700">
             {getPriceDisplay()}
