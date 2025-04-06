@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { getMapsLoader, isMapsApiAvailable } from '../lib/googleMapsService';
 
 interface MapProps {
   center?: { lat: number; lng: number };
@@ -29,18 +29,20 @@ const Map: React.FC<MapProps> = ({
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [mapMarkers, setMapMarkers] = useState<google.maps.Marker[]>([]);
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null);
+  const [apiKeyMissing, setApiKeyMissing] = useState(false);
 
   useEffect(() => {
     const initMap = async () => {
-      const loader = new Loader({
-        apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-        version: 'weekly',
-        libraries: ['places'],
-      });
+      // Check if Maps API is available using our utility function
+      if (!isMapsApiAvailable()) {
+        console.log('Google Maps API key is missing');
+        setApiKeyMissing(true);
+        return;
+      }
       
-      // Log to confirm API key is available
-      console.log('Maps API Key present:', !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
-
+      // Get the shared loader instance
+      const loader = getMapsLoader();
+      
       try {
         const google = await loader.load();
         
@@ -70,11 +72,12 @@ const Map: React.FC<MapProps> = ({
         }
       } catch (error) {
         console.error('Error loading Google Maps:', error);
+        setApiKeyMissing(true);
       }
     };
 
     initMap();
-  }, [center, zoom, onMapClick]);
+  }, [center, zoom, onMapClick, map]);
 
   // Update markers when they change
   useEffect(() => {
@@ -127,6 +130,32 @@ const Map: React.FC<MapProps> = ({
     }
   }, [center, zoom, map]);
 
+  if (apiKeyMissing) {
+    return (
+      <div 
+        style={{ width: '100%', height }} 
+        className="rounded-lg shadow-md bg-gray-100 flex items-center justify-center p-6 text-center"
+      >
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Map View Unavailable</h3>
+          <p className="text-gray-600 mb-4">
+            Google Maps API key is missing. To enable maps, add your API key to the .env.local file:
+          </p>
+          <div className="bg-gray-200 p-3 rounded-md text-left text-sm font-mono mb-4">
+            <p>NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_api_key_here</p>
+            <p>NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=your_api_key_here</p>
+            <p className="mt-2 text-xs text-gray-600">Or use non-prefixed versions in your .env file:</p>
+            <p>GOOGLE_MAPS_API_KEY=your_api_key_here</p>
+            <p>GOOGLE_PLACES_API_KEY=your_api_key_here</p>
+          </div>
+          <p className="text-gray-500 text-sm">
+            Get API keys from the <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
   return <div ref={mapRef} style={{ width: '100%', height }} className="rounded-lg shadow-md" />;
 };
 

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { LeisureActivity } from '../types';
 import SaveActivityButton from './SaveActivityButton';
+import AiEnhancedBadge from './AiEnhancedBadge';
 import { getGoogleImageUrl } from '../lib/imageService';
 
 interface ActivityCardProps {
@@ -94,11 +95,18 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
           <span className="truncate">{activity.location.address}</span>
         </div>
         
-        <p className="h-12 mb-3 overflow-hidden text-sm text-gray-700">
-          {activity.description.length > 100
-            ? `${activity.description.substring(0, 100)}...`
-            : activity.description}
-        </p>
+        <div className="relative mb-3">
+          <p className="h-12 overflow-hidden text-sm text-gray-700">
+            {activity.description.length > 100
+              ? `${activity.description.substring(0, 100)}...`
+              : activity.description}
+          </p>
+          {activity.isAIEnhanced && (
+            <div className="absolute top-0 right-0">
+              <AiEnhancedBadge />
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">

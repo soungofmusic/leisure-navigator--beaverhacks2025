@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { getMapsLoader, isMapsApiAvailable } from '../lib/googleMapsService';
 
 interface PlacesAutocompleteProps {
   onPlaceSelect: (place: {
@@ -21,14 +21,17 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || '',
-      version: 'weekly',
-      libraries: ['places'],
-    });
-
-    // Log to confirm API key is available
-    console.log('Places API Key present:', !!process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY);
+    // Check if Maps API is available using our utility function
+    if (!isMapsApiAvailable()) {
+      console.log('Google Places API key is missing');
+      return;
+    }
+    
+    // Get the shared loader instance
+    const loader = getMapsLoader();
+    
+    // Log to confirm loader is available
+    console.log('Using shared Google Maps loader');
 
     loader.load().then(() => {
       setLoaded(true);

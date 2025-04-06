@@ -188,28 +188,61 @@ export async function processNaturalLanguageQuery(query: string): Promise<{
     const messages = [
       {
         role: 'system',
-        content: 'You extract structured search parameters from natural language queries about leisure activities. Return a JSON object with fields: types (array of activity types), priceRange (object with min and max), and tags (array of relevant tags).'
+        content: 'You extract structured search parameters from natural language queries about leisure activities. Return a VALID JSON object with fields: types (array of activity types), priceRange (object with min and max), and tags (array of relevant tags). The response must be ONLY valid JSON with no additional text.'
       },
       {
         role: 'user',
         content: `Extract search filters from this query: "${query}"
           Valid activity types are: outdoor, indoor, cultural, entertainment, sports, culinary, educational, nightlife, wellness, other.
-          Return only a JSON object with the extracted parameters.`
+          Return ONLY a valid JSON object with these fields (if detected):
+          {"types":["type1","type2"], "priceRange":{"min":0,"max":100}, "tags":["tag1","tag2"]}`
       }
     ];
 
     const response = await callGroqApi(messages, 'llama3-8b-8192', {
       max_tokens: 300,
-      temperature: 0.3
+      temperature: 0.2 // Lower temperature for more consistent output
     });
 
-    const content = response.choices[0].message.content || '{}';
-    const parsedFilters = JSON.parse(content);
+    // Extract only the JSON part from the response
+    let content = response.choices[0].message.content || '{}';
     
-    return {
-      ...defaultFilters,
-      ...parsedFilters
-    };
+    // Try to find JSON object in the response if it's wrapped in markdown or text
+    try {
+      // Check for JSON block in markdown
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        content = jsonMatch[1].trim();
+      }
+      
+      // Sometimes LLMs add text before or after the JSON
+      // Look for the outermost { } pair
+      const firstBrace = content.indexOf('{');
+      const lastBrace = content.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        content = content.substring(firstBrace, lastBrace + 1);
+      }
+      
+      const parsedFilters = JSON.parse(content);
+      
+      // Validate the parsed data structure
+      return {
+        ...defaultFilters,
+        types: Array.isArray(parsedFilters.types) ? parsedFilters.types : defaultFilters.types,
+        priceRange: (
+          parsedFilters.priceRange && 
+          typeof parsedFilters.priceRange === 'object' && 
+          !isNaN(parsedFilters.priceRange.min) && 
+          !isNaN(parsedFilters.priceRange.max)
+        ) ? parsedFilters.priceRange : defaultFilters.priceRange,
+        tags: Array.isArray(parsedFilters.tags) ? parsedFilters.tags : defaultFilters.tags
+      };
+    } catch (parseError) {
+      console.error('Failed to parse JSON from Groq response:', parseError);
+      console.log('Problematic content:', content);
+      return defaultFilters;
+    }
   } catch (error) {
     console.error('Error processing natural language query:', error);
     return defaultFilters;
