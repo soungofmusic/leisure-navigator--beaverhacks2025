@@ -41,6 +41,10 @@ export async function GET(request: NextRequest) {
   const locationCenter = (lat && lng) ? 
     { lat: parseFloat(lat), lng: parseFloat(lng) } : 
     DEFAULT_CENTER;
+    
+  // Log location being used to help debug
+  console.log(`API received location: ${lat}, ${lng}`);
+  console.log(`Using location center: ${locationCenter.lat}, ${locationCenter.lng}`);
   
   // Search query
   const query = searchParams.get('query') || '';
@@ -216,9 +220,9 @@ export async function GET(request: NextRequest) {
               
               // Convert place to LeisureActivity format
               const activity: LeisureActivity = {
-                id: place.place_id,
+                id: place.place_id || `placeholder-${Math.random().toString(36).substring(2, 10)}`,
                 title: place.name || 'Unnamed Location',
-                description: place.vicinity || `A ${activityType} activity in Portland.`,
+                description: place.vicinity || `A ${activityType} activity in this location.`,
                 type: activityType as ActivityType, // Cast to ActivityType
                 location: {
                   address: place.vicinity || '',
@@ -278,14 +282,35 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching activities:', error);
     
-    // Return mock data as fallback if available
+    // Return mock data as fallback if available, but adjust to requested location
     if (mockLeisureActivities && mockLeisureActivities.length > 0) {
-      console.log('Returning mock activities as fallback data');
+      console.log(`Returning mock activities adjusted for location: ${locationCenter.lat}, ${locationCenter.lng}`);
+      
+      // Adapt mock data to the requested location
+      const adjustedMockData = mockLeisureActivities.map(activity => {
+        // Create a new activity with updated location
+        return {
+          ...activity,
+          location: {
+            ...activity.location,
+            coordinates: {
+              // Add tiny random offset to prevent all items appearing in exact same spot
+              lat: locationCenter.lat + (Math.random() * 0.02 - 0.01),
+              lng: locationCenter.lng + (Math.random() * 0.02 - 0.01)
+            }
+          },
+          // Update description to match location
+          description: activity.description.replace(/Portland/g, 'this location')
+            .replace(/Oregon/g, 'the area')
+        };
+      });
+      
       return NextResponse.json({
         success: true,
-        count: mockLeisureActivities.length,
-        data: mockLeisureActivities,
-        source: 'fallback'
+        count: adjustedMockData.length,
+        data: adjustedMockData,
+        source: 'fallback',
+        locationUsed: locationCenter
       });
     }
     
