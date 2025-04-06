@@ -28,49 +28,98 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
         setLoading(true);
         console.log('Loading activity details for ID:', params.id);
         
-        // First try the mock data directly (as a fallback)
+        // Get activity ID from URL parameters
+        const id = params.id;
+        
+        // First try to fetch from API
         try {
-          // Dynamic import to avoid SSR issues
-          const { fetchActivityById } = await import('@/lib/mockData');
-          const mockData = await fetchActivityById(params.id);
+          console.log('Attempting to fetch from API:', `/api/activities/${id}`);
+          const response = await fetch(`/api/activities/${id}`);
           
-          if (mockData) {
-            console.log('Found activity in mock data:', mockData.title);
-            setActivity(mockData);
-            setLoading(false);
-            return;
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API error response:', errorText);
+            throw new Error(`API error: ${response.status} - ${errorText}`);
           }
-        } catch (mockErr) {
-          console.log('No matching mock activity found, trying API...');
+
+          const data = await response.json();
+          if (!data.data) {
+            console.error('API returned unexpected data format:', data);
+            throw new Error('Invalid data format returned from API');
+          }
+          
+          setActivity(data.data);
+          console.log('Loaded activity from API:', data.data.title);
+          return;
+        } catch (apiError) {
+          console.error('Error fetching from API:', apiError);
+          // Fall through to client-side fetching
         }
-        
-        // If not in mock data, try the API endpoint
-        const response = await fetch(`/api/activities/${params.id}`);
-        console.log('API response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('API error response:', errorText);
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('API response data:', result);
-        
-        if (result.data) {
-          setActivity(result.data);
-        } else {
-          console.error('No data in API response');
-          setError('Activity not found');
+
+        // If API fails, try to fetch directly from mockData on client side
+        try {
+          console.log('Attempting to fetch from client-side mock data');
+          const { fetchActivityById } = await import('@/lib/mockData');
+          const activity = await fetchActivityById(id);
+          
+          if (!activity) {
+            throw new Error('Activity not found in mock data');
+          }
+          
+          console.log('Loaded activity from client mock data:', activity.title);
+          setActivity(activity);
+          return;
+        } catch (mockError) {
+          console.error('Error fetching from mock data:', mockError);
+          
+          // Create fallback for generated IDs
+          if (id.startsWith('generated-')) {
+            try {
+              console.log('Creating fallback for generated ID:', id);
+              const parts = id.split('-');
+              if (parts.length >= 3) {
+                const activityType = parts[1];
+                
+                // Create a fallback dynamic activity
+                const fallbackActivity: LeisureActivity = {
+                  id: id,
+                  title: `${activityType.charAt(0).toUpperCase() + activityType.slice(1)} Activity`,
+                  description: `This is a dynamically generated ${activityType} activity based on your search location.`,
+                  type: activityType as any,
+                  location: {
+                    address: 'Near your search location',
+                    coordinates: { lat: 0, lng: 0 }
+                  },
+                  schedule: {
+                    startDate: new Date().toISOString(),
+                    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+                    recurring: false
+                  },
+                  rating: 4.5,
+                  tags: [activityType, 'recommended'],
+                  price: { isFree: false, cost: 0 },
+                  contactInfo: {},
+                  images: []
+                };
+                
+                setActivity(fallbackActivity);
+                return;
+              }
+            } catch (fallbackError) {
+              console.error('Error creating fallback activity:', fallbackError);
+            }
+          }
+          
+          throw mockError;
         }
       } catch (err) {
-        console.error('Error loading activity details:', err);
+        console.error('Error loading activity:', err);
         setError('Failed to load activity details. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
-
+    
     loadActivity();
   }, [params.id]);
 
