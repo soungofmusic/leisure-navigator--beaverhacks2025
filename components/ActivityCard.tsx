@@ -20,13 +20,6 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
   const [googleTotalRatings, setGoogleTotalRatings] = useState<number | null>(null);
   const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   
-  // Format price display
-  const getPriceDisplay = () => {
-    if (activity.price.isFree) {
-      return 'Free';
-    }
-    return `${activity.price.currency || '$'}${activity.price.cost?.toFixed(2)}`;
-  };
   
   // Determine the image URL to use
   const fallbackImageUrl = activity.images && activity.images.length > 0 
@@ -160,9 +153,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
               </div>
             )}
           </div>
-          <span className="text-sm font-semibold text-primary-700">
-            {getPriceDisplay()}
-          </span>
+
         </div>
         
         <div className="flex flex-wrap mb-3 gap-1">

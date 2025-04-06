@@ -80,14 +80,25 @@ export async function GET(request: NextRequest) {
     for (const activityType of activityTypes) {
       const placeTypes = TYPE_TO_PLACES_TYPES[activityType] || ['point_of_interest'];
       
-      // We need at least 5 results per type
-      const resultsNeeded = 5 - activities.filter(a => a.type === activityType).length;
+      // Get up to 10 results per type when explicitly filtered, 5 otherwise
+      const isExplicitlyFiltered = typeParam.length > 0;
+      const maxResultsPerType = isExplicitlyFiltered ? 10 : 5;
+      const resultsNeeded = maxResultsPerType - activities.filter(a => a.type === activityType).length;
       if (resultsNeeded <= 0) continue;
+      
+      console.log(`Looking for ${resultsNeeded} more ${activityType} activities`);
       
       // Try each place type until we get enough results
       for (const placeType of placeTypes) {
         // Skip if we already have enough results for this type
-        if (activities.filter(a => a.type === activityType).length >= 5) break;
+        const currentTypeCount = activities.filter(a => a.type === activityType).length;
+        const isExplicitlyFiltered = typeParam.length > 0;
+        const maxResultsPerType = isExplicitlyFiltered ? 10 : 5;
+        
+        if (currentTypeCount >= maxResultsPerType) {
+          console.log(`Already have enough ${activityType} activities (${currentTypeCount}/${maxResultsPerType})`);  
+          break;
+        }
         
         try {
           console.log(`Searching for ${placeType} places as ${activityType}`);
@@ -238,7 +249,14 @@ export async function GET(request: NextRequest) {
               activities.push(activity);
               
               // Break if we have enough activities for this type
-              if (activities.filter(a => a.type === activityType).length >= 5) break;
+              const currentCount = activities.filter(a => a.type === activityType).length;
+              const isExplicitlyFiltered = typeParam.length > 0;
+              const maxResultsPerType = isExplicitlyFiltered ? 10 : 5;
+              
+              if (currentCount >= maxResultsPerType) {
+                console.log(`Reached limit for ${activityType} activities (${currentCount}/${maxResultsPerType})`);  
+                break;
+              }
             }
           } else {
             console.warn(`No ${placeType} places found: ${response.data.status}`);

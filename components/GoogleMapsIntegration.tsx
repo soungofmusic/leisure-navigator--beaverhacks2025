@@ -39,14 +39,35 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
   
   // Check if API keys are available
   useEffect(() => {
-    const mapsKeyPresent = !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    const placesKeyPresent = !!process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
-    console.log('Google Maps API Keys loaded:', { mapsKeyPresent, placesKeyPresent });
-    setApiKeysLoaded(mapsKeyPresent && placesKeyPresent);
+    // Use the proper environment variable names from the .env file
+    const mapsKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 
+                   process.env.GOOGLE_MAPS_API_KEY || '';
+    const placesKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || 
+                     process.env.GOOGLE_PLACES_API_KEY || '';
+    
+    const mapsKeyPresent = !!mapsKey;
+    const placesKeyPresent = !!placesKey;
+    
+    console.log('Google Maps API Keys availability:', { 
+      mapsKeyPresent, 
+      placesKeyPresent,
+      mapsKeyPrefix: mapsKey ? mapsKey.substring(0, 5) + '...' : 'Not found',
+      placesKeyPrefix: placesKey ? placesKey.substring(0, 5) + '...' : 'Not found'
+    });
+    
+    // Only need one key since we're using the same key for both services
+    setApiKeysLoaded(mapsKeyPresent || placesKeyPresent);
   }, []);
+  
+  // Safely initialize map center with fallbacks to ensure it's never undefined
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(
-    center || preferences.location || { lat: 45.5152, lng: -122.6784 } // Default to Portland, OR if no saved location
+    center || 
+    (preferences.location && preferences.location.lat && preferences.location.lng
+      ? { lat: preferences.location.lat, lng: preferences.location.lng }
+      : { lat: 45.5152, lng: -122.6784 }) // Default to Portland, OR if no saved location
   );
+  // Track when user manually moves the map
+  const [userMovedMap, setUserMovedMap] = useState(false);
   const [zoom, setZoom] = useState(13);
 
   const handlePlaceSelect = (place: { address: string; coordinates: { lat: number; lng: number } }) => {
@@ -57,6 +78,7 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
   // Update map center when the center prop changes
   useEffect(() => {
     if (center) {
+      console.log('Center prop changed, updating map center:', center);
       setMapCenter(center);
     }
   }, [center]);
@@ -90,10 +112,20 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
   };
 
   const [locationPrompted, setLocationPrompted] = useState(false);
+  // Create a ref to track if geolocation has been requested (persists between renders)
+  const [locationPermissionRequested, setLocationPermissionRequested] = useState(false);
 
   // Get current location and update map center
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
+      // Only show the browser permission dialog if it hasn't been shown before
+      if (!locationPermissionRequested) {
+        setLocationPermissionRequested(true);
+        console.log('First time requesting location permission');
+      } else {
+        console.log('Using existing location permission');
+      }
+      
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const currentLocation = {
@@ -126,26 +158,23 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
     }
   };
   
-  // Prompt user to share location if they haven't been prompted yet
+  // No longer automatically prompt for location when component mounts
+  // We'll only request location when the user explicitly clicks the button
   useEffect(() => {
-    if (!locationPrompted && showCurrentLocation) {
+    // Just check if the user already has a saved location, but don't prompt
+    const hasLocation = !!preferences?.location?.lat && !!preferences?.location?.lng;
+    
+    if (hasLocation && !locationPrompted) {
       setLocationPrompted(true);
-      
-      // Check if user already has a saved location
-      const hasLocation = !!preferences?.location?.lat;
-      
-      if (!hasLocation) {
-        // Ask user to share location using browser dialog
-        const shareLocation = window.confirm(
-          'Would you like to share your location to find activities near you?'
-        );
-        
-        if (shareLocation) {
-          getCurrentLocation();
-        }
+      // If they have a saved location, we can use it without prompting
+      if (preferences.location && preferences.location.lat && preferences.location.lng) {
+        setMapCenter({
+          lat: preferences.location.lat,
+          lng: preferences.location.lng
+        });
       }
     }
-  }, [preferences?.location, locationPrompted, showCurrentLocation]);
+  }, [preferences?.location, locationPrompted]);
 
   return (
     <div className="w-full">
@@ -156,15 +185,29 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
       )}
       
       <div className="relative">
-        <Map 
-          center={mapCenter} 
-          zoom={zoom} 
-          markers={markers}
-          onMarkerClick={onMarkerClick}
-          height={height}
-          showSearchThisArea={showSearchThisArea}
-          onBoundsChanged={handleAreaSearch}
-        />
+        {!apiKeysLoaded ? (
+          <div className="flex items-center justify-center w-full" style={{height}}>
+            <div className="p-4 text-center bg-yellow-100 rounded-md">
+              <p className="text-yellow-800 font-medium">Google Maps API keys are not loaded correctly.</p>
+              <p className="text-sm text-yellow-700 mt-2">Please check your environment variables.</p>
+            </div>
+          </div>
+        ) : (
+          <Map 
+            center={mapCenter} 
+            zoom={zoom} 
+            markers={markers}
+            onMarkerClick={onMarkerClick}
+            height={height}
+            showSearchThisArea={showSearchThisArea}
+            onBoundsChanged={handleAreaSearch}
+            onCenterChanged={(newCenter) => {
+              console.log('Map center changed in GoogleMapsIntegration:', newCenter);
+              setMapCenter(newCenter);
+              setUserMovedMap(true);
+            }}
+          />
+        )}
         
         <div className="absolute bottom-4 left-4 flex flex-wrap space-x-2 space-y-2">
           {showCurrentLocation && (
@@ -178,15 +221,22 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <span>Share My Location</span>
+                <span>Use My Location</span>
               </button>
               
               <button 
-                onClick={() => handleSaveCurrentLocation()}
-                className="px-3 py-2 text-sm font-medium text-primary-700 bg-white border border-primary-300 rounded-md shadow-md hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                onClick={() => {
+                  handleSaveCurrentLocation();
+                  setUserMovedMap(false);
+                  // Show feedback toast or alert
+                  alert('Location saved successfully!');
+                }}
+                className={`px-3 py-2 text-sm font-medium ${userMovedMap ? 'text-white bg-blue-600 hover:bg-blue-700' : 'text-primary-700 bg-white hover:bg-primary-50'} border ${userMovedMap ? 'border-blue-500' : 'border-primary-300'} rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+                  userMovedMap ? 'animate-pulse' : ''
+                }`}
                 aria-label="Save current location"
               >
-                Save as My Location
+                {userMovedMap ? 'Save This Location' : 'Save as My Location'}
               </button>
             </>
           )}

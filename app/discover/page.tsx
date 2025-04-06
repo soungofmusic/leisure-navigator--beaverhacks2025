@@ -321,7 +321,6 @@ export default function DiscoverPage() {
   // Handle search queries (supports both traditional and AI-powered searches)
   const handleSearch = async (filters: {
     types?: ActivityType[];
-    priceRange?: { min: number; max: number };
     tags?: string[];
     query?: string;
   }) => {
@@ -360,15 +359,17 @@ export default function DiscoverPage() {
     }
   };
 
+
   // Handle filter changes
   const handleFilterChange = async (filters: {
     types: ActivityType[];
-    priceRange: number;
     distance: number;
     location?: { lat: number; lng: number };
   }) => {
     try {
       setLoading(true);
+      // Save active filters for reference
+      setActiveFilters({ types: filters.types });
       
       // Update map center if location is provided
       if (filters.location) {
@@ -525,12 +526,17 @@ export default function DiscoverPage() {
                         ))}
                       </div>
                       
-                      {/* Load More button - only show if there are more activities to load */}
+                      {/* Load More button - show with special highlight when activity types are selected */}
                       {displayedActivities.length < filteredActivities.length && (
-                        <div className="mt-8 text-center">
+                        <div className={`mt-8 text-center ${activeFilters.types.length > 0 ? 'p-4 bg-blue-50 rounded-lg border border-blue-200' : ''}`}>
+                          {activeFilters.types.length > 0 && (
+                            <p className="mb-3 font-medium text-blue-700">
+                              Viewing filtered results for: {activeFilters.types.join(', ')}
+                            </p>
+                          )}
                           <button 
                             onClick={handleLoadMore}
-                            className="px-6 py-3 text-sm font-medium text-white transition-colors rounded-lg bg-primary-600 hover:bg-primary-700"
+                            className={`px-6 py-3 text-sm font-medium text-white transition-colors rounded-lg ${activeFilters.types.length > 0 ? 'bg-blue-600 hover:bg-blue-700 shadow-md' : 'bg-primary-600 hover:bg-primary-700'}`}
                           >
                             Load 5 More Activities
                           </button>
@@ -552,9 +558,7 @@ export default function DiscoverPage() {
                     markers={filteredActivities.map((activity) => ({
                       id: activity.id,
                       title: activity.title,
-                      description: activity.price.isFree
-                        ? 'Free'
-                        : `$${activity.price.cost}`,
+                      description: activity.type,
                       position: activity.location.coordinates,
                     }))}
                     center={mapCenter}

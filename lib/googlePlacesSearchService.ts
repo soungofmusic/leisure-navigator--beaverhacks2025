@@ -1,6 +1,7 @@
 import { getMapsLoader, isMapsApiAvailable } from './googleMapsService';
-import { LeisureActivity } from '../types';
-import { getPlaceDetails } from './googlePlacesService';
+import { LeisureActivity, ActivityType } from '../types';
+import { getPlaceDetails, GooglePlaceDetails } from './googlePlacesService';
+import { mockLeisureActivities } from './mockData';
 
 // Default center location for Portland, OR
 const DEFAULT_CENTER = {
@@ -223,4 +224,112 @@ function searchPlaces(
       }
     });
   });
+}
+
+/**
+ * Fetch detailed information about a specific activity by its ID
+ * @param id The Google Places ID or a mock activity ID
+ * @returns Promise with the activity details or null if not found
+ */
+export async function fetchActivityDetails(id: string): Promise<LeisureActivity | null> {
+  // First try to find in mock data (for backwards compatibility)
+  const mockActivity = mockLeisureActivities.find(activity => activity.id === id);
+  if (mockActivity) {
+    return mockActivity;
+  }
+  
+  // If not found in mock data, it must be a Google Places ID
+  if (!isMapsApiAvailable()) {
+    console.error('Google Maps API key is missing');
+    return null;
+  }
+
+  try {
+    // Check if Maps API is available
+    if (typeof window !== 'undefined' && (!window.google || !window.google.maps || !window.google.maps.places)) {
+      // Wait for the Maps API to load
+      await getMapsLoader().load();
+    }
+    
+    // Create a PlacesService instance
+    const placesServiceDiv = document.createElement('div');
+    document.body.appendChild(placesServiceDiv);
+    
+    const placesService = new google.maps.places.PlacesService(placesServiceDiv);
+    
+    // Get detailed place information
+    const details = await getPlaceDetails(id);
+    
+    if (!details) {
+      return null;
+    }
+    
+    // Create a LeisureActivity from the details
+    const activity: LeisureActivity = {
+      id: id,
+      title: details.name || "",
+      description: details.formattedAddress || "",
+      type: getActivityTypeFromPlaceTypes([]) as ActivityType,
+      location: {
+        address: details.formattedAddress || "",
+        coordinates: {
+          lat: 0, // We don't have geometry in GooglePlaceDetails interface
+          lng: 0
+        }
+      },
+      schedule: {
+        startDate: new Date().toISOString(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
+        recurring: true,
+        recurrencePattern: "Daily, Hours vary by day"
+      },
+      price: {
+        isFree: false,
+        cost: 0,
+        currency: 'USD',
+        level: 0
+      },
+      contactInfo: {
+        phone: details.internationalPhoneNumber || "",
+        email: "",
+        website: details.website || details.url || ""
+      },
+      images: details.photos || ["/placeholder-image.jpg"],
+      rating: details.rating || 0,
+      reviews: details.reviews?.map((review, idx) => ({
+        id: `review-${idx}`,
+        userId: review.authorName || "unknown",
+        username: review.authorName || "Google User",
+        rating: review.rating || 0,
+        comment: review.text || "",
+        date: review.time ? new Date(review.time * 1000).toISOString() : new Date().toISOString()
+      })) || [],
+      tags: [],
+      googleDetails: {
+        placeId: id,
+        rating: details.rating || 0,
+        userRatingsTotal: details.userRatingsTotal || 0,
+        priceLevel: 0,
+        types: [],
+        url: details.url || "",
+        website: details.website || "",
+        formattedAddress: details.formattedAddress || "",
+        vicinity: "",
+        photos: details.photos || []
+      }
+    };
+    
+    return activity;
+  } catch (error) {
+    console.error('Error fetching activity details:', error);
+    return null;
+  }
+}
+
+/**
+ * Convert Google Places types to an ActivityType
+ */
+function getActivityTypeFromPlaceTypes(types: string[]): string {
+  // Default if no matches or empty array
+  return 'other';
 }

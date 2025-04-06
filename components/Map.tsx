@@ -19,6 +19,7 @@ interface MapProps {
     radius: number;
     bounds: google.maps.LatLngBounds;
   }) => void;
+  onCenterChanged?: (center: { lat: number; lng: number }) => void;
   showSearchThisArea?: boolean;
   height?: string;
 }
@@ -32,6 +33,7 @@ const Map: React.FC<MapProps> = ({
   onMarkerClick,
   onBoundsChanged,
   onMapClick,
+  onCenterChanged,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
@@ -46,6 +48,7 @@ const Map: React.FC<MapProps> = ({
 
   useEffect(() => {
     const initMap = async () => {
+      console.log('Initializing map...');
       // Check if Maps API is available using our utility function
       if (!isMapsApiAvailable()) {
         console.log('Google Maps API key is missing');
@@ -57,8 +60,8 @@ const Map: React.FC<MapProps> = ({
       const loader = getMapsLoader();
       
       try {
-        const google = await loader.load();
-        
+        await loader.load();
+        console.log('Google Maps API loaded successfully');
         setApiLoaded(true);
       } catch (error) {
         console.error('Error loading Google Maps:', error);
@@ -72,55 +75,90 @@ const Map: React.FC<MapProps> = ({
   useEffect(() => {
     if (!apiLoaded || !mapRef.current) return;
     
-    // Create the map instance
-    const map = new google.maps.Map(mapRef.current, {
-      center,
-      zoom,
-      mapTypeControl: false,
-      fullscreenControl: false,
-      streetViewControl: false,
-      zoomControl: true,
-      zoomControlOptions: {
-        position: google.maps.ControlPosition.RIGHT_TOP,
-      },
-    });
-    
-    // Create an InfoWindow instance
-    const infoWindow = new google.maps.InfoWindow();
-    
-    setMapInstance(map);
-    setActiveInfoWindow(infoWindow);
-    
-    // Add bounds_changed event listener if onBoundsChanged is provided
-    if (onBoundsChanged) {
-      // Set initial bounds
-      const initialBounds = map.getBounds();
-      if (initialBounds) {
-        setMapBounds(initialBounds);
-      }
+    console.log('Creating map instance with center:', center);
+    // Initialize map once the API is loaded
+    try {
+      const map = new google.maps.Map(mapRef.current, {
+        center,
+        zoom,
+        mapTypeControl: false,
+        fullscreenControl: true,
+        streetViewControl: false,
+        zoomControl: true,
+        zoomControlOptions: {
+          position: google.maps.ControlPosition.RIGHT_TOP,
+        },
+      });
+
+      console.log('Map instance created successfully');
+      setMapInstance(map);
       
-      // Listen for bounds change events
-      map.addListener('bounds_changed', () => {
-        const newBounds = map.getBounds();
-        if (newBounds) {
-          setMapBounds(newBounds);
-          // Only show search button when bounds have changed significantly
-          setShowSearchButton(true);
+      // Create an InfoWindow instance
+      const infoWindow = new google.maps.InfoWindow();
+      setActiveInfoWindow(infoWindow);
+
+    } catch (error) {
+      console.error('Error creating map instance:', error);
+    }
+  }, [apiLoaded, center, zoom, mapRef]);
+
+  useEffect(() => {
+    if (!mapInstance) return;
+
+    // Only add bounds_changed listener if onBoundsChanged callback is provided
+    if (onBoundsChanged) {
+      mapInstance.addListener('bounds_changed', () => {
+        const bounds = mapInstance.getBounds();
+        
+        if (bounds) {
+          const center = mapInstance.getCenter();
+          // Approximate radius calculation in meters
+          const ne = bounds.getNorthEast();
+          
+          if (center && ne) {
+            const radius = haversineDistance(
+              { lat: center.lat(), lng: center.lng() },
+              { lat: ne.lat(), lng: ne.lng() }
+            );
+            
+            onBoundsChanged({
+              center: { lat: center.lat(), lng: center.lng() },
+              radius,
+              bounds
+            });
+          }
+        }
+      });
+    }  
+    // Only add center_changed listener if onCenterChanged callback is provided
+    if (onCenterChanged) {
+      console.log('Adding center_changed listener');
+      mapInstance.addListener('center_changed', () => {
+        const newCenter = mapInstance.getCenter();
+        if (newCenter) {
+          const centerObj = {
+            lat: newCenter.lat(),
+            lng: newCenter.lng()
+          };
+          console.log('Map center changed:', centerObj);
+          onCenterChanged(centerObj);
         }
       });
     }
     
     // Add click event listener if onMapClick is provided
     if (onMapClick) {
-      map.addListener('click', onMapClick);
+      mapInstance.addListener('click', (e: google.maps.MapMouseEvent) => {
+        onMapClick(e);
+      });
     }
     
     // Cleanup function
     return () => {
       // Cleanup happens in other useEffect hooks
-      google.maps.event.clearInstanceListeners(map);
+      google.maps.event.clearInstanceListeners(mapInstance);
     };
-  }, [apiLoaded, onBoundsChanged, onMapClick]);
+  }, [apiLoaded, onBoundsChanged, onMapClick, onCenterChanged]);
 
   // Calculate distance in meters between two points
   const haversineDistance = (p1: { lat: number; lng: number }, p2: { lat: number; lng: number }) => {
@@ -138,48 +176,63 @@ const Map: React.FC<MapProps> = ({
     return R * c;
   };
 
+  // Only create or update markers when the map, markers array, or activeInfoWindow changes
   useEffect(() => {
     if (!mapInstance || !activeInfoWindow) return;
-
-    // Clear existing markers
+    
+    console.log('Setting up markers:', markers.length);
+    
+    // Clear existing markers only once at the beginning of the effect
     markerInstances.forEach((marker) => marker.setMap(null));
-    setMarkerInstances([]);
-
-    // Add new markers
-    const newMapMarkers = markers.map((markerData) => {
-      const marker = new google.maps.Marker({
-        position: markerData.position,
-        map: mapInstance,
-        title: markerData.title,
-        animation: google.maps.Animation.DROP,
-      });
-
-      marker.addListener('click', () => {
-        if (markerData.description) {
-          activeInfoWindow.setContent(
-            `<div class="info-window">
-              <h3 class="font-semibold">${markerData.title}</h3>
-              <p>${markerData.description}</p>
-            </div>`
-          );
-          activeInfoWindow.open(mapInstance, marker);
-        }
+    
+    // Create new markers array for tracking
+    const newMarkers: google.maps.Marker[] = [];
+    
+    // Setup markers if they exist
+    if (markers.length > 0) {
+      markers.forEach((markerData) => {
+        // Create the marker
+        const marker = new google.maps.Marker({
+          position: markerData.position,
+          map: mapInstance,
+          title: markerData.title,
+          // Remove animation to prevent flickering
+          animation: undefined
+        });
         
+        // Track the new marker
+        newMarkers.push(marker);
+
+        // Add click event for markers if callback provided
         if (onMarkerClick) {
-          onMarkerClick(markerData.id);
+          marker.addListener('click', () => {
+            if (onMarkerClick) {
+              onMarkerClick(markerData.id);
+            }
+            
+            if (activeInfoWindow && markerData.description) {
+              activeInfoWindow.setContent(
+                `<div class="p-2">
+                  <h3 class="font-medium text-base">${markerData.title}</h3>
+                  ${markerData.description ? `<p class="text-sm mt-1">${markerData.description}</p>` : ''}
+                </div>`
+              );
+              activeInfoWindow.open(mapInstance, marker);
+            }
+          });
         }
       });
-
-      return marker;
-    });
-
-    setMarkerInstances(newMapMarkers);
-
-    // Clean up
+      
+      // Update state with new markers array
+      setMarkerInstances(newMarkers);
+    }
+    
+    // Only clean up when component unmounts or dependencies change
     return () => {
-      newMapMarkers.forEach((marker) => marker.setMap(null));
+      console.log('Cleaning up markers:', newMarkers.length);
+      newMarkers.forEach(marker => marker.setMap(null));
     };
-  }, [mapInstance, markers, activeInfoWindow, onMarkerClick]);
+  }, [mapInstance, markers, onMarkerClick, activeInfoWindow]);
 
   useEffect(() => {
     if (mapInstance) {

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { fetchActivityById } from '@/lib/mockData';
 import { LeisureActivity } from '@/types';
 import Map from '@/components/Map';
 import SaveActivityButton from '@/components/SaveActivityButton';
@@ -23,15 +22,46 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
     const loadActivity = async () => {
       try {
         setLoading(true);
-        const data = await fetchActivityById(params.id);
-        if (data) {
-          setActivity(data);
+        console.log('Loading activity details for ID:', params.id);
+        
+        // First try the mock data directly (as a fallback)
+        try {
+          // Dynamic import to avoid SSR issues
+          const { fetchActivityById } = await import('@/lib/mockData');
+          const mockData = await fetchActivityById(params.id);
+          
+          if (mockData) {
+            console.log('Found activity in mock data:', mockData.title);
+            setActivity(mockData);
+            setLoading(false);
+            return;
+          }
+        } catch (mockErr) {
+          console.log('No matching mock activity found, trying API...');
+        }
+        
+        // If not in mock data, try the API endpoint
+        const response = await fetch(`/api/activities/${params.id}`);
+        console.log('API response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('API error response:', errorText);
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('API response data:', result);
+        
+        if (result.data) {
+          setActivity(result.data);
         } else {
+          console.error('No data in API response');
           setError('Activity not found');
         }
       } catch (err) {
+        console.error('Error loading activity details:', err);
         setError('Failed to load activity details. Please try again later.');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -61,14 +91,6 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
       </div>
     );
   }
-
-  // Format price display
-  const getPriceDisplay = () => {
-    if (activity.price.isFree) {
-      return 'Free';
-    }
-    return `${activity.price.currency || '$'}${activity.price.cost?.toFixed(2)}`;
-  };
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -138,9 +160,6 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                     {activity.rating ? activity.rating.toFixed(1) : 'N/A'}
                   </span>
                 </div>
-                <span className="px-3 py-1 text-sm font-semibold text-primary-700 bg-primary-50 rounded-full">
-                  {getPriceDisplay()}
-                </span>
               </div>
               
               <div className="mb-6">
