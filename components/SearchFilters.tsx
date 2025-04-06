@@ -1,20 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ActivityType } from '@/types';
+import React, { useState, useEffect } from 'react';
+import { ActivityType } from '../types';
+import PlacesAutocomplete from './PlacesAutocomplete';
 
 interface SearchFiltersProps {
   onSearch: (query: string) => void;
   onFilterChange: (filters: {
     types: ActivityType[];
-    priceRange: { min: number; max: number };
+    priceRange: number;
+    distance: number;
+    location?: { lat: number; lng: number };
   }) => void;
+  defaultLocation?: { lat: number; lng: number };
 }
 
-const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onFilterChange }) => {
+const SearchFilters: React.FC<SearchFiltersProps> = ({ 
+  onSearch, 
+  onFilterChange,
+  defaultLocation = { lat: 45.5152, lng: -122.6784 } // Portland, OR as default
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>([]);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 100 });
+  const [priceRange, setPriceRange] = useState(50); // Single price value from 0-100
+  const [distance, setDistance] = useState(10); // Distance in miles
+  const [location, setLocation] = useState(defaultLocation);
 
   const activityTypes: { label: string; value: ActivityType }[] = [
     { label: 'Outdoor', value: 'outdoor' },
@@ -43,6 +53,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onFilterChange 
       onFilterChange({
         types: newSelection,
         priceRange,
+        distance,
+        location,
       });
       
       return newSelection;
@@ -50,13 +62,34 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onFilterChange 
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const newPriceRange = { ...priceRange, [name]: Number(value) };
-    
-    setPriceRange(newPriceRange);
+    const value = Number(e.target.value);
+    setPriceRange(value);
     onFilterChange({
       types: selectedTypes,
-      priceRange: newPriceRange,
+      priceRange: value,
+      distance,
+      location,
+    });
+  };
+
+  const handleDistanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Number(e.target.value);
+    setDistance(value);
+    onFilterChange({
+      types: selectedTypes,
+      priceRange,
+      distance: value,
+      location,
+    });
+  };
+
+  const handleLocationSelect = (place: { address: string; coordinates: { lat: number; lng: number } }) => {
+    setLocation(place.coordinates);
+    onFilterChange({
+      types: selectedTypes,
+      priceRange,
+      distance,
+      location: place.coordinates,
     });
   };
 
@@ -94,33 +127,51 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onFilterChange 
         </div>
       </div>
 
+      <div className="mb-4">
+        <h3 className="mb-2 font-medium">Location</h3>
+        <PlacesAutocomplete 
+          onPlaceSelect={handleLocationSelect} 
+          placeholder="Change location (default: Portland, OR)"
+        />
+      </div>
+
+      <div className="mb-4">
+        <h3 className="mb-2 font-medium">Distance</h3>
+        <div className="flex items-center space-x-2">
+          <input
+            type="range"
+            min="1"
+            max="50"
+            value={distance}
+            onChange={handleDistanceChange}
+            className="w-full"
+          />
+          <span className="text-sm font-medium text-gray-700">{distance} mi</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-xs">Nearby</span>
+          <span className="text-xs">50+ miles</span>
+        </div>
+      </div>
+
       <div>
         <h3 className="mb-2 font-medium">Price Range</h3>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-500">${priceRange.min}</span>
           <input
             type="range"
-            name="min"
             min="0"
             max="100"
-            value={priceRange.min}
+            value={priceRange}
             onChange={handlePriceChange}
             className="w-full"
           />
-          <span className="text-sm text-gray-500">${priceRange.max}</span>
-          <input
-            type="range"
-            name="max"
-            min="0"
-            max="300"
-            value={priceRange.max}
-            onChange={handlePriceChange}
-            className="w-full"
-          />
+          <span className="text-sm font-medium text-gray-700">
+            {priceRange === 0 ? 'Free' : `$${priceRange}`}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-xs">Free</span>
-          <span className="text-xs">$300+</span>
+          <span className="text-xs">$100+</span>
         </div>
       </div>
     </div>

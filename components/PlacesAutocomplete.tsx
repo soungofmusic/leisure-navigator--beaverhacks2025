@@ -22,13 +22,17 @@ const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
 
   useEffect(() => {
     const loader = new Loader({
-      apiKey: process.env.GOOGLE_PLACES_API_KEY || '',
+      apiKey: process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || '',
       version: 'weekly',
       libraries: ['places'],
     });
 
+    // Log to confirm API key is available
+    console.log('Places API Key present:', !!process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY);
+
     loader.load().then(() => {
       setLoaded(true);
+      console.log('Google Places API loaded successfully');
     }).catch(err => {
       console.error('Error loading Google Places API', err);
     });

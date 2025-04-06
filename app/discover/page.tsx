@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { fetchActivities } from '@/lib/mockData';
-import { LeisureActivity, ActivityType } from '@/types';
-import SearchFilters from '@/components/SearchFilters';
-import ActivityCard from '@/components/ActivityCard';
-import GoogleMapsIntegration from '@/components/GoogleMapsIntegration';
-import { useUser } from '@/context/UserContext';
+import { fetchActivities } from '../../lib/mockData';
+import { LeisureActivity, ActivityType } from '../../types';
+import SearchFilters from '../../components/SearchFilters';
+import ActivityCard from '../../components/ActivityCard';
+import GoogleMapsIntegration from '../../components/GoogleMapsIntegration';
+import { useUser } from '../../context/UserContext';
 
 export default function DiscoverPage() {
   const { preferences } = useUser();
@@ -59,14 +59,31 @@ export default function DiscoverPage() {
   // Handle filter changes
   const handleFilterChange = async (filters: {
     types: ActivityType[];
-    priceRange: { min: number; max: number };
+    priceRange: number;
+    distance: number;
+    location?: { lat: number; lng: number };
   }) => {
     try {
       setLoading(true);
+      
+      // Update map center if location is provided
+      if (filters.location) {
+        setMapCenter(filters.location);
+      }
+      
+      // Convert price range to min/max format for the API
+      const priceRangeForApi = {
+        min: 0,
+        max: filters.priceRange
+      };
+      
       const data = await fetchActivities({
         type: filters.types.length > 0 ? filters.types : undefined,
-        priceRange: filters.priceRange,
+        priceRange: priceRangeForApi,
+        distance: filters.distance,
+        location: filters.location,
       });
+      
       setFilteredActivities(data);
     } catch (err) {
       setError('Failed to filter activities. Please try again later.');
@@ -92,7 +109,11 @@ export default function DiscoverPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sidebar with filters */}
         <div className="lg:col-span-1">
-          <SearchFilters onSearch={handleSearch} onFilterChange={handleFilterChange} />
+          <SearchFilters 
+            onSearch={handleSearch} 
+            onFilterChange={handleFilterChange}
+            defaultLocation={mapCenter}
+          />
           
           {/* View toggle */}
           <div className="p-4 mt-4 bg-white rounded-lg shadow-md">
@@ -169,6 +190,7 @@ export default function DiscoverPage() {
                         : `$${activity.price.cost}`,
                       position: activity.location.coordinates,
                     }))}
+                    center={mapCenter}
                     onMarkerClick={handleMarkerClick}
                   />
                 </div>

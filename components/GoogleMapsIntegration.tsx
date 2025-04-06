@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Map from './Map';
 import PlacesAutocomplete from './PlacesAutocomplete';
-import { useUser } from '@/context/UserContext';
+import { useUser } from '../context/UserContext';
 
 interface GoogleMapsIntegrationProps {
   height?: string;
@@ -15,6 +15,7 @@ interface GoogleMapsIntegrationProps {
     description?: string;
     id: string;
   }>;
+  center?: { lat: number; lng: number };
   onMarkerClick?: (markerId: string) => void;
 }
 
@@ -23,11 +24,21 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
   showSearch = true,
   showCurrentLocation = true,
   markers = [],
+  center,
   onMarkerClick,
 }) => {
   const { preferences, updatePreferences } = useUser();
+  const [apiKeysLoaded, setApiKeysLoaded] = useState(false);
+  
+  // Check if API keys are available
+  useEffect(() => {
+    const mapsKeyPresent = !!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const placesKeyPresent = !!process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY;
+    console.log('Google Maps API Keys loaded:', { mapsKeyPresent, placesKeyPresent });
+    setApiKeysLoaded(mapsKeyPresent && placesKeyPresent);
+  }, []);
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(
-    preferences.location || { lat: 45.5152, lng: -122.6784 } // Default to Portland, OR if no saved location
+    center || preferences.location || { lat: 45.5152, lng: -122.6784 } // Default to Portland, OR if no saved location
   );
   const [zoom, setZoom] = useState(13);
 
@@ -35,6 +46,13 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
     setMapCenter(place.coordinates);
     setZoom(15); // Zoom in when a specific place is selected
   };
+  
+  // Update map center when the center prop changes
+  useEffect(() => {
+    if (center) {
+      setMapCenter(center);
+    }
+  }, [center]);
 
   const handleSaveCurrentLocation = () => {
     if (mapCenter) {
