@@ -344,6 +344,7 @@ export default function DiscoverPage() {
   }) => {
     try {
       setLoading(true);
+      console.log('Smart search with location:', mapCenter, 'and filters:', activeFilters);
       
       // Build URL parameters
       const params = new URLSearchParams();
@@ -353,10 +354,29 @@ export default function DiscoverPage() {
         params.append('query', filters.query);
       }
       
-      // Add type parameters if they exist
-      if (filters.types && filters.types.length > 0) {
-        filters.types.forEach(type => params.append('type', type));
+      // Add type parameters - combine from both active filters and search filters
+      const typesToUse = [...(activeFilters.types || []), ...(filters.types || [])];
+      // Create a unique array of types (without using Set for TS compatibility)
+      const uniqueTypes = typesToUse.filter((type, index, self) => 
+        self.indexOf(type) === index
+      );
+      if (uniqueTypes.length > 0) {
+        uniqueTypes.forEach(type => params.append('type', type));
       }
+      
+      // Add tags if provided from search
+      if (filters.tags && filters.tags.length > 0) {
+        filters.tags.forEach(tag => params.append('tag', tag));
+      }
+      
+      // Include current map center (location) in search
+      params.append('lat', mapCenter.lat.toString());
+      params.append('lng', mapCenter.lng.toString());
+      
+      // Include current search radius
+      params.append('radius', searchRadius.toString());
+      
+      console.log('Smart search API call:', `/api/activities?${params.toString()}`);
       
       // Call the API with the constructed URL
       const response = await fetch(`/api/activities?${params.toString()}`);
@@ -365,13 +385,14 @@ export default function DiscoverPage() {
       }
       
       const result = await response.json();
+      console.log('Smart search results:', result.data?.length || 0, 'activities found');
       setFilteredActivities(result.data || []);
       
       // Reset visible count when search terms change
       setVisibleCount(10);
     } catch (err) {
       setError('Failed to search activities. Please try again later.');
-      console.error(err);
+      console.error('Smart search error:', err);
     } finally {
       setLoading(false);
     }
@@ -386,12 +407,16 @@ export default function DiscoverPage() {
   }) => {
     try {
       setLoading(true);
-      // Save active filters for reference
-      setActiveFilters({ types: filters.types });
+      // Save active filters for reference including location
+      setActiveFilters({ 
+        types: filters.types,
+        location: filters.location 
+      });
       
       // Update map center if location is provided in filters
       if (filters.location) {
         setMapCenter(filters.location);
+        console.log('Updated map center from filters:', filters.location);
       }
       
       // Build URL parameters
