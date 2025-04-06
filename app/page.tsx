@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import FeaturedActivities from '@/components/FeaturedActivities';
 
 export default function HomePage() {
   return (
@@ -40,8 +43,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Featured Activities Section */}
       <section className="py-16 bg-white">
+        <div className="container">
+          <FeaturedActivities />
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-gray-50">
         <div className="container">
           <h2 className="mb-12 text-3xl font-bold text-center text-secondary-900">How Leisure Navigator Works</h2>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
