@@ -5,6 +5,7 @@ import '../styles/globals.css';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { UserProvider } from '../context/UserContext';
+import { ThemeProvider } from '../context/ThemeContext';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,9 +27,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable}`}>
       <body className="flex flex-col min-h-screen">
         <UserProvider>
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
+          <ThemeProvider>
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+          </ThemeProvider>
         </UserProvider>
       </body>
     </html>

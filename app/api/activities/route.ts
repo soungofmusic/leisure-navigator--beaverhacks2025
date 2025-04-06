@@ -132,8 +132,9 @@ export async function GET(request: NextRequest) {
             // Process each place and convert to LeisureActivity
             for (const place of response.data.results) {
               // Skip places we've already processed (might be returned for multiple types)
-              if (processedPlaceIds.has(place.place_id)) continue;
-              processedPlaceIds.add(place.place_id);
+              // Add non-null assertion since we've already checked it in the if statement
+              if (place.place_id && processedPlaceIds.has(place.place_id)) continue;
+              if (place.place_id) processedPlaceIds.add(place.place_id);
               
               // Get photo reference if available
               let photoUrl = '/placeholder-image.jpg';
@@ -216,7 +217,7 @@ export async function GET(request: NextRequest) {
               // Convert place to LeisureActivity format
               const activity: LeisureActivity = {
                 id: place.place_id,
-                title: place.name,
+                title: place.name || 'Unnamed Location',
                 description: place.vicinity || `A ${activityType} activity in Portland.`,
                 type: activityType as ActivityType, // Cast to ActivityType
                 location: {
@@ -243,7 +244,7 @@ export async function GET(request: NextRequest) {
                 },
                 images: [photoUrl],
                 rating: place.rating || 0,
-                tags: [...new Set([...place.types || [], activityType])]
+                tags: Array.from(new Set([...(place.types || []), activityType]))
               };
               
               activities.push(activity);

@@ -206,18 +206,35 @@ const Map: React.FC<MapProps> = ({
         // Add click event for markers if callback provided
         if (onMarkerClick) {
           marker.addListener('click', () => {
+            // Call the marker click callback
             if (onMarkerClick) {
               onMarkerClick(markerData.id);
             }
             
+            // Show info window
             if (activeInfoWindow && markerData.description) {
               activeInfoWindow.setContent(
                 `<div class="p-2">
                   <h3 class="font-medium text-base">${markerData.title}</h3>
                   ${markerData.description ? `<p class="text-sm mt-1">${markerData.description}</p>` : ''}
+                  <div class="mt-2">
+                    <button id="view-details-btn-${markerData.id}" class="text-sm font-medium text-white rounded bg-primary-600 hover:bg-primary-700 py-1 px-3 mt-2">
+                      View Details
+                    </button>
+                  </div>
                 </div>`
               );
               activeInfoWindow.open(mapInstance, marker);
+              
+              // Add event listener to the view details button in the info window
+              window.setTimeout(() => {
+                const viewDetailsBtn = document.getElementById(`view-details-btn-${markerData.id}`);
+                if (viewDetailsBtn) {
+                  viewDetailsBtn.addEventListener('click', () => {
+                    window.location.href = `/activities/${markerData.id}`;
+                  });
+                }
+              }, 100); // Small timeout to ensure DOM is ready
             }
           });
         }

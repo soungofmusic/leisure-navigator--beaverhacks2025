@@ -505,40 +505,79 @@ async function generateActivitiesForLocation(locationName: string, lat: number, 
     // Generate random activity names and descriptions based on the location
     const activityNames = {
       'outdoor': [
-        `${locationName} Park Exploration`,
-        `${locationName} Nature Trails`,
-        `${locationName} Scenic Views`,
-        `${locationName} Gardens`,
-        `Hiking in ${locationName}`,
+        'Hiking Adventure',
+        'Nature Walk',
+        'Park Exploration',
+        'Outdoor Recreation',
+        'Scenic Viewpoints'
       ],
       'indoor': [
-        `${locationName} Shopping Center`,
-        `${locationName} Museum`,
-        `${locationName} Gallery`,
-        `${locationName} Library`,
-        `${locationName} Indoor Recreation`,
+        'Museum Visit',
+        'Indoor Recreation',
+        'Shopping Experience',
+        'Indoor Entertainment',
+        'Exhibition Viewing'
       ],
       'cultural': [
-        `${locationName} Historical Sites`,
-        `${locationName} Cultural Center`,
-        `${locationName} Art Exhibition`,
-        `${locationName} Heritage Museum`,
-        `${locationName} Historical Walking Tour`,
+        'Cultural Experience',
+        'Art Appreciation',
+        'Heritage Tour',
+        'Historical Visit',
+        'Cultural Workshop'
       ],
       'entertainment': [
-        `${locationName} Live Theater`,
-        `${locationName} Cinema Experience`,
-        `${locationName} Music Venue`,
-        `${locationName} Comedy Club`,
-        `${locationName} Entertainment District`,
+        'Live Performance',
+        'Entertainment Venue',
+        'Family Fun',
+        'Exciting Show',
+        'Entertainment Experience',
+        'Cinema Experience',
+        'Music Venue',
+        'Comedy Club',
+        'Entertainment District'
       ],
       'culinary': [
-        `${locationName} Food Tour`,
-        `${locationName} Farmers Market`,
-        `${locationName} Culinary Experience`,
-        `${locationName} Brewery Tour`,
-        `${locationName} Wine Tasting`,
+        'Food Tour',
+        'Farmers Market',
+        'Culinary Experience',
+        'Brewery Tour',
+        'Wine Tasting'
       ],
+      'sports': [
+        'Sports Event',
+        'Athletic Activity',
+        'Game Day', 
+        'Sports Venue',
+        'Team Competition'
+      ],
+      'educational': [
+        'Learning Experience',
+        'Educational Tour',
+        'Workshop',
+        'Class',
+        'Seminar'
+      ],
+      'nightlife': [
+        'Evening Entertainment',
+        'Night Event',
+        'After Hours Fun',
+        'Nightclub Experience',
+        'Late Night Activity'
+      ],
+      'wellness': [
+        'Spa Day',
+        'Relaxation Session',
+        'Wellness Retreat',
+        'Health Activity',
+        'Mindfulness Practice'
+      ],
+      'other': [
+        'Local Experience',
+        'Special Event',
+        'Unique Activity',
+        'Community Gathering',
+        'Hidden Gem'
+      ]
     };
     
     const names = activityNames[activityType] || activityNames['outdoor'];
@@ -552,28 +591,58 @@ async function generateActivitiesForLocation(locationName: string, lat: number, 
         `Enjoy recreational activities in the scenic environment of ${locationName}.`,
       ],
       'indoor': [
-        `Stay comfortable while enjoying the best indoor attractions ${locationName} has to offer.`,
-        `Discover fascinating exhibits and collections in ${locationName}'s premier indoor spaces.`,
-        `Escape the weather while exploring interesting indoor venues in ${locationName}.`,
-        `Experience culture and entertainment in ${locationName}'s indoor facilities.`,
+        `Visit fascinating indoor attractions in ${locationName} with this engaging activity.`,
+        `Discover the interesting indoor spaces of ${locationName}.`,
+        `Enjoy a climate-controlled experience in ${locationName} regardless of weather.`,
+        `Explore indoor wonders in the heart of ${locationName}.`,
       ],
       'cultural': [
         `Immerse yourself in the rich cultural heritage of ${locationName}.`,
-        `Learn about the fascinating history and traditions of ${locationName}.`,
-        `Experience art, history, and local culture in ${locationName}.`,
-        `Discover the cultural significance and historical landmarks of ${locationName}.`,
+        `Experience the artistic and cultural treasures of ${locationName}.`,
+        `Discover the historical and cultural significance of ${locationName}.`,
+        `Explore the cultural identity and artistic expressions of ${locationName}.`,
       ],
       'entertainment': [
-        `Enjoy exciting entertainment options in the heart of ${locationName}.`,
-        `Experience thrilling performances and entertainment in ${locationName}.`,
-        `Laugh, dance, and be amazed by ${locationName}'s entertainment scene.`,
-        `Discover why ${locationName} is known for its vibrant entertainment options.`,
+        `Enjoy exciting entertainment options in ${locationName}.`,
+        `Experience thrilling performances and shows in ${locationName}.`,
+        `Have a fantastic time with top-quality entertainment in ${locationName}.`,
+        `Be entertained by the vibrant scene in ${locationName}.`,
       ],
       'culinary': [
         `Savor the flavors of ${locationName} with this delicious culinary experience.`,
         `Taste local specialties and discover food gems in ${locationName}.`,
         `Indulge in ${locationName}'s food and drink scene with this culinary adventure.`,
         `Experience the tastes and aromas that make ${locationName}'s food scene special.`,
+      ],
+      'sports': [
+        `Participate in or watch thrilling sports activities in ${locationName}.`,
+        `Get active with sports and recreational activities in ${locationName}.`,
+        `Experience the excitement of sports events in ${locationName}.`,
+        `Join the local sports community in ${locationName} for a fun activity.`,
+      ],
+      'educational': [
+        `Expand your knowledge with educational experiences in ${locationName}.`,
+        `Learn something new through hands-on activities in ${locationName}.`,
+        `Engage your mind with interesting facts and discoveries in ${locationName}.`,
+        `Participate in educational workshops and classes in ${locationName}.`,
+      ],
+      'nightlife': [
+        `Experience the vibrant nightlife and evening entertainment in ${locationName}.`,
+        `Enjoy after-hours fun in the exciting atmosphere of ${locationName}.`,
+        `Discover the best night spots and venues in ${locationName}.`,
+        `Immerse yourself in the energetic nighttime scene of ${locationName}.`,
+      ],
+      'wellness': [
+        `Relax and rejuvenate with wellness activities in ${locationName}.`,
+        `Focus on self-care and health with specialized services in ${locationName}.`,
+        `Restore balance and find tranquility in ${locationName}.`,
+        `Improve your wellbeing with therapeutic experiences in ${locationName}.`,
+      ],
+      'other': [
+        `Discover unique and interesting activities in ${locationName}.`,
+        `Try something different with this special experience in ${locationName}.`,
+        `Explore one of ${locationName}'s hidden gems and local favorites.`,
+        `Enjoy a memorable activity that showcases the best of ${locationName}.`,
       ],
     };
     

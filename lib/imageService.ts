@@ -61,9 +61,9 @@ export async function getGoogleImageUrl(searchTerm: string): Promise<string | nu
       // Use placeholder without excessive logging
       return getPlaceholderImageUrl(searchTerm);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     // Check if it's an abort error (timeout)
-    if (error.name === 'AbortError') {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
       console.warn(`Google image search timed out for: ${searchTerm}`);
     } else if (typeof window !== 'undefined') {
       // @ts-ignore: Check property on window object
