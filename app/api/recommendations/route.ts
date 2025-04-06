@@ -119,12 +119,10 @@ export async function GET(request: NextRequest) {
       .map(([type]) => type);
     
     // Combine user preferences and behavior for recommendation
-    const recommendationTypes = [
-      ...new Set([
-        ...favoriteTypes,
-        ...sortedTypes.slice(0, 3)
-      ])
-    ];
+    // Using Array.from instead of spread operator to be compatible with all TS targets
+    const combinedTypes = [...favoriteTypes, ...sortedTypes.slice(0, 3)];
+    const uniqueTypesSet = new Set(combinedTypes);
+    const recommendationTypes = Array.from(uniqueTypesSet);
     
     // If no preferences or history, use default popular categories
     if (recommendationTypes.length === 0) {
