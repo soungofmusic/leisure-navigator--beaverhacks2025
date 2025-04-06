@@ -196,17 +196,29 @@ export async function processNaturalLanguageQuery(query: string, location?: { la
   }
 
   try {
+    // Safely format location context if available
     let locationContext = '';
-    if (location) {
-      // Convert lat/lng to a readable location description using approximate labels
-      locationContext = `The search is focused around coordinates (${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}). `;
-      // Note: In a production app, we would use reverse geocoding to get a human-readable location name
+    try {
+      if (location && typeof location === 'object' && location.lat && location.lng) {
+        // Ensure we're dealing with numbers before using toFixed
+        const lat = typeof location.lat === 'number' ? location.lat : parseFloat(location.lat);
+        const lng = typeof location.lng === 'number' ? location.lng : parseFloat(location.lng);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+          locationContext = `The search is focused around coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)}). `;
+          console.log(`Using location context: ${locationContext}`);
+        } else {
+          console.warn('Invalid location coordinates', location);
+        }
+      }
+    } catch (locErr) {
+      console.warn('Error formatting location data:', locErr);
     }
 
     const messages = [
       {
         role: 'system',
-        content: `You are an expert in analyzing natural language search queries for leisure activities and events. ${locationContext}Extract structured search parameters from user queries.`
+        content: `You are an expert in analyzing natural language search queries for leisure activities and events. ${locationContext}Extract structured search parameters from user queries. Return ONLY valid JSON with no extra text.`
       },
       {
         role: 'user',
@@ -257,12 +269,24 @@ export async function processNaturalLanguageQuery(query: string, location?: { la
         tags: Array.isArray(parsedFilters.tags) ? parsedFilters.tags : defaultFilters.tags
       };
     } catch (parseError) {
-      console.error('Failed to parse JSON from Groq response:', parseError);
+      console.error('Failed to parse JSON from Groq response:', parseError instanceof Error ? parseError.message : 'Unknown error');
       console.log('Problematic content:', content);
+      console.log('Attempted to parse:', content);
       return defaultFilters;
     }
   } catch (error) {
-    console.error('Error processing natural language query:', error);
+    // Improved error handling to capture more information
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    const errorStack = error instanceof Error ? error.stack : '';
+    
+    console.error(`Error processing natural language query: ${errorMsg}`);
+    console.error('Error details:', {
+      message: errorMsg,
+      stack: errorStack,
+      query: query,
+      location: location ? `lat: ${location.lat}, lng: ${location.lng}` : 'none'
+    });
+    
     return defaultFilters;
   }
 }
