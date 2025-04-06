@@ -5,19 +5,23 @@ import { fetchActivities } from '@/lib/mockData';
 import { LeisureActivity, ActivityType } from '@/types';
 import SearchFilters from '@/components/SearchFilters';
 import ActivityCard from '@/components/ActivityCard';
-import Map from '@/components/Map';
+import GoogleMapsIntegration from '@/components/GoogleMapsIntegration';
+import { useUser } from '@/context/UserContext';
 
 export default function DiscoverPage() {
+  const { preferences } = useUser();
   const [activities, setActivities] = useState<LeisureActivity[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<LeisureActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'list' | 'map'>('list');
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({
-    lat: 45.5152,
-    lng: -122.6784, // Portland, OR
-  });
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(
+    preferences.location || {
+      lat: 45.5152,
+      lng: -122.6784, // Portland, OR
+    }
+  );
 
   // Load initial activities
   useEffect(() => {
@@ -153,10 +157,10 @@ export default function DiscoverPage() {
                 </div>
               ) : (
                 <div className="overflow-hidden rounded-lg shadow-md">
-                  <Map
-                    center={mapCenter}
-                    zoom={14}
+                  <GoogleMapsIntegration
                     height="600px"
+                    showSearch={true}
+                    showCurrentLocation={true}
                     markers={filteredActivities.map((activity) => ({
                       id: activity.id,
                       title: activity.title,
