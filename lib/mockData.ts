@@ -1,5 +1,6 @@
 import { LeisureActivity, ActivityType } from '../types';
-import { getImageUrl, getImageUrls } from './imageService';
+import { getImageUrl, getGoogleImageUrl } from './imageService';
+import { enhanceActivityDescription } from './groqService';
 
 // Mock leisure activities data for Portland, OR
 export const mockLeisureActivities: LeisureActivity[] = [
@@ -335,116 +336,154 @@ const getRandomRating = (): number => {
   return Number((Math.random() * 1.5 + 3.5).toFixed(1));
 };
 
-// Generate activities for a specific location
-const generateActivitiesForLocation = (locationName: string, lat: number, lng: number, count: number = 5): LeisureActivity[] => {
+// Generate activities for a given location
+async function generateActivitiesForLocation(locationName: string, lat: number, lng: number, count: number): Promise<LeisureActivity[]> {
   const activities: LeisureActivity[] = [];
   
-  // Popular prefixes for activity names
-  const prefixes = [
-    '', 'Downtown', 'Historic', 'Old Town', 'Central', 'Riverside', 
-    'Lakeside', 'Uptown', 'Modern', 'Traditional', 'Local', 'Famous'
-  ];
-  
-  // Common activity name formats
-  const activityTemplates = [
-    '{{prefix}} {{location}} Park',
-    '{{prefix}} {{location}} Museum',
-    '{{prefix}} {{location}} Gardens',
-    '{{prefix}} {{location}} Shopping District',
-    '{{location}} Hiking Trails',
-    '{{location}} Food Market',
-    '{{location}} Historical Site',
-    '{{prefix}} {{location}} Art Gallery',
-    '{{location}} Brewery Tour',
-    '{{location}} Cultural Center',
-    '{{location}} Scenic Viewpoint',
-    '{{prefix}} {{location}} Theater',
-    '{{location}} Local Cuisine Tour',
-    '{{location}} Wine Tasting',
-    '{{location}} Outdoor Adventure'
-  ];
-  
-  // Sample descriptions
-  const descriptionTemplates = [
-    'Explore the beautiful sights of {{location}} at this popular destination.',
-    'Experience the unique culture and history of {{location}} through this fascinating activity.',
-    'A must-visit attraction for anyone coming to {{location}}.',
-    'Locals and tourists alike rave about this {{location}} highlight.',
-    'Discover why this is one of the most popular things to do in {{location}}.',
-    'Immerse yourself in the natural beauty surrounding {{location}}.',
-    'Learn about the rich heritage and traditions of {{location}}.',
-    'Get a taste of what makes {{location}} special with this experience.',
-    'Enjoy the sights and sounds of {{location}} at this popular venue.',
-    'Relax and unwind while enjoying this classic {{location}} activity.'
-  ];
-  
   for (let i = 0; i < count; i++) {
-    // Pick a random activity type
-    const type = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+    const activityType = activityTypes[Math.floor(Math.random() * activityTypes.length)];
+    const tags = sampleTags[activityType] || [];
+    const selectedTags = tags
+      .sort(() => 0.5 - Math.random())
+      .slice(0, Math.floor(Math.random() * 3) + 2);
     
-    // Pick a random prefix or empty string
-    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    // Generate random activity names and descriptions based on the location
+    const activityNames = {
+      'outdoor': [
+        `${locationName} Park Exploration`,
+        `${locationName} Nature Trails`,
+        `${locationName} Scenic Views`,
+        `${locationName} Gardens`,
+        `Hiking in ${locationName}`,
+      ],
+      'indoor': [
+        `${locationName} Shopping Center`,
+        `${locationName} Museum`,
+        `${locationName} Gallery`,
+        `${locationName} Library`,
+        `${locationName} Indoor Recreation`,
+      ],
+      'cultural': [
+        `${locationName} Historical Sites`,
+        `${locationName} Cultural Center`,
+        `${locationName} Art Exhibition`,
+        `${locationName} Heritage Museum`,
+        `${locationName} Historical Walking Tour`,
+      ],
+      'entertainment': [
+        `${locationName} Live Theater`,
+        `${locationName} Cinema Experience`,
+        `${locationName} Music Venue`,
+        `${locationName} Comedy Club`,
+        `${locationName} Entertainment District`,
+      ],
+      'culinary': [
+        `${locationName} Food Tour`,
+        `${locationName} Farmers Market`,
+        `${locationName} Culinary Experience`,
+        `${locationName} Brewery Tour`,
+        `${locationName} Wine Tasting`,
+      ],
+    };
     
-    // Pick a random activity template
-    const activityTemplate = activityTemplates[Math.floor(Math.random() * activityTemplates.length)];
+    const names = activityNames[activityType] || activityNames['outdoor'];
+    const activityName = names[Math.floor(Math.random() * names.length)];
     
-    // Generate title from template
-    const title = activityTemplate
-      .replace('{{prefix}}', prefix)
-      .replace('{{location}}', locationName);
-      
-    // Pick a random description template
-    const descriptionTemplate = descriptionTemplates[Math.floor(Math.random() * descriptionTemplates.length)];
+    const descriptions = {
+      'outdoor': [
+        `Explore the beautiful outdoor spaces of ${locationName} with this exciting adventure.`,
+        `Discover hidden natural gems in ${locationName} on this outdoor excursion.`,
+        `Experience the stunning landscapes and fresh air of ${locationName}.`,
+        `Enjoy recreational activities in the scenic environment of ${locationName}.`,
+      ],
+      'indoor': [
+        `Stay comfortable while enjoying the best indoor attractions ${locationName} has to offer.`,
+        `Discover fascinating exhibits and collections in ${locationName}'s premier indoor spaces.`,
+        `Escape the weather while exploring interesting indoor venues in ${locationName}.`,
+        `Experience culture and entertainment in ${locationName}'s indoor facilities.`,
+      ],
+      'cultural': [
+        `Immerse yourself in the rich cultural heritage of ${locationName}.`,
+        `Learn about the fascinating history and traditions of ${locationName}.`,
+        `Experience art, history, and local culture in ${locationName}.`,
+        `Discover the cultural significance and historical landmarks of ${locationName}.`,
+      ],
+      'entertainment': [
+        `Enjoy exciting entertainment options in the heart of ${locationName}.`,
+        `Experience thrilling performances and entertainment in ${locationName}.`,
+        `Laugh, dance, and be amazed by ${locationName}'s entertainment scene.`,
+        `Discover why ${locationName} is known for its vibrant entertainment options.`,
+      ],
+      'culinary': [
+        `Savor the flavors of ${locationName} with this delicious culinary experience.`,
+        `Taste local specialties and discover food gems in ${locationName}.`,
+        `Indulge in ${locationName}'s food and drink scene with this culinary adventure.`,
+        `Experience the tastes and aromas that make ${locationName}'s food scene special.`,
+      ],
+    };
     
-    // Generate description from template
-    const description = descriptionTemplate.replace(/\{\{location\}\}/g, locationName);
+    const descList = descriptions[activityType] || descriptions['outdoor'];
+    const basicDescription = descList[Math.floor(Math.random() * descList.length)];
     
-    // Generate random coordinates near the provided location
-    const latOffset = (Math.random() - 0.5) * 0.1; // Random offset within ~5km
-    const lngOffset = (Math.random() - 0.5) * 0.1;
+    // Enhanced description with Groq (if API key is available)
+    let description = basicDescription;
+    try {
+      // Only enhance some descriptions to manage API usage (30% chance)
+      if (Math.random() > 0.7) {
+        // Add isEnhanced flag to indicate AI enhancement
+        const enhancedDescription = await enhanceActivityDescription(basicDescription, activityType);
+        if (enhancedDescription !== basicDescription) {
+          description = enhancedDescription;
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to enhance description with Groq: ${error}`);
+      // Use the basic description if enhancement fails
+    }
     
-    // Determine if the activity is free or has a cost
-    const isFree = Math.random() > 0.7; // 30% chance of being free
+    // Generate a slightly offset location from the provided coordinates
+    const latOffset = (Math.random() - 0.5) * 0.05;
+    const lngOffset = (Math.random() - 0.5) * 0.05;
     
-    // Pick 2-4 random tags from the corresponding type
-    const availableTags = sampleTags[type];
-    const numTags = Math.floor(Math.random() * 3) + 2; // 2 to 4 tags
-    const shuffledTags = [...availableTags].sort(() => Math.random() - 0.5);
-    const tags = shuffledTags.slice(0, numTags);
+    // Create a search term for Google image search
+    const imageSearchTerm = `${activityName} ${locationName} ${activityType}`;
     
-    // Get random image for the activity
-    const imageSearchTerm = `${title} ${locationName} ${type}`;
-    
-    activities.push({
-      id: `gen_${locationName.toLowerCase().replace(/\s+/g, '_')}_${i + 1}`,
-      title,
+    const activity: LeisureActivity = {
+      id: `gen-${locationName.replace(/\s+/g, '-').toLowerCase()}-${i + 1}`,
+      title: activityName,
       description,
-      type,
+      type: activityType,
       location: {
-        address: `${locationName}`,
+        address: `${locationName}, OR`,
         coordinates: {
           lat: lat + latOffset,
-          lng: lng + lngOffset
-        }
+          lng: lng + lngOffset,
+        },
       },
       schedule: {
-        startDate: '2025-04-01T09:00:00',
-        endDate: '2025-12-31T18:00:00',
+        startDate: '2025-04-01T10:00:00',
+        endDate: '2025-12-31T17:00:00',
         recurring: true,
-        recurrencePattern: 'Daily, 9:00 AM - 6:00 PM'
+        recurrencePattern: 'Daily, 10:00 AM - 5:00 PM',
       },
-      price: isFree ? { isFree: true } : {
-        isFree: false,
-        cost: getRandomPrice(10, 50),
-        currency: 'USD'
+      price: {
+        isFree: Math.random() > 0.5,
+        cost: Math.random() > 0.5 ? getRandomPrice(10, 50) : undefined,
+        currency: 'USD',
       },
       contactInfo: {
-        website: `https://example.com/${locationName.toLowerCase().replace(/\s+/g, '-')}`
+        website: `https://www.${locationName.replace(/\s+/g, '').toLowerCase()}.example.com`,
       },
+      // Use Unsplash as a fallback while we implement Google Images API completely
+      // For the production version, you'll want to preload these images or handle asynchronously
       images: [getImageUrl(imageSearchTerm)],
       rating: getRandomRating(),
-      tags
-    });
+      tags: selectedTags,
+      // Flag to indicate if description was enhanced by AI
+      isAIEnhanced: description !== basicDescription
+    };
+    
+    activities.push(activity);
   }
   
   return activities;
@@ -452,9 +491,9 @@ const generateActivitiesForLocation = (locationName: string, lat: number, lng: n
 
 // Function to fetch activities based on filters
 export const fetchActivities = (filters?: any): Promise<LeisureActivity[]> => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     // Simulate network delay
-    setTimeout(() => {
+    setTimeout(async () => {
       let filteredActivities = [...mockLeisureActivities];
       
       // Add location-based activities if location is provided
@@ -482,7 +521,7 @@ export const fetchActivities = (filters?: any): Promise<LeisureActivity[]> => {
         }
         
         // Generate new activities for this location
-        const locationActivities = generateActivitiesForLocation(locationName, lat, lng, 7);
+        const locationActivities = await generateActivitiesForLocation(locationName, lat, lng, 7);
         
         // Add them to the activities list
         filteredActivities = [...filteredActivities, ...locationActivities];

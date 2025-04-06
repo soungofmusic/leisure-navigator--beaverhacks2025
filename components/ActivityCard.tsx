@@ -33,6 +33,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
   
   // Handle image load error
   const handleImageError = () => {
+    console.log('Image error occurred, using placeholder image');
     setImageError(true);
   };
   
@@ -67,7 +68,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
               fill
               className="object-cover"
               unoptimized
+              priority
               onError={handleImageError}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           </div>
         ) : (

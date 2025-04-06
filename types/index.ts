@@ -30,6 +30,7 @@ export interface LeisureActivity {
   rating?: number;
   reviews?: Review[];
   tags: string[];
+  isAIEnhanced?: boolean; // Flag indicating if description was enhanced by Groq AI
 }
 
 export type ActivityType = 
