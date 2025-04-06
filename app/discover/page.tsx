@@ -12,6 +12,8 @@ export default function DiscoverPage() {
   const { preferences } = useUser();
   const [activities, setActivities] = useState<LeisureActivity[]>([]);
   const [filteredActivities, setFilteredActivities] = useState<LeisureActivity[]>([]);
+  const [displayedActivities, setDisplayedActivities] = useState<LeisureActivity[]>([]);
+  const [visibleCount, setVisibleCount] = useState(10); // Initially show 10 activities
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'list' | 'map'>('list');
@@ -23,6 +25,11 @@ export default function DiscoverPage() {
     }
   );
 
+  // Update displayed activities when filtered activities or visible count changes
+  useEffect(() => {
+    setDisplayedActivities(filteredActivities.slice(0, visibleCount));
+  }, [filteredActivities, visibleCount]);
+  
   // Load initial activities
   useEffect(() => {
     const loadActivities = async () => {
@@ -31,6 +38,8 @@ export default function DiscoverPage() {
         const data = await fetchActivities();
         setActivities(data);
         setFilteredActivities(data);
+        // Reset visible count when loading new activities
+        setVisibleCount(10);
       } catch (err) {
         setError('Failed to load activities. Please try again later.');
         console.error(err);
@@ -41,6 +50,11 @@ export default function DiscoverPage() {
 
     loadActivities();
   }, []);
+  
+  // Handle loading more activities
+  const handleLoadMore = () => {
+    setVisibleCount(prevCount => prevCount + 5); // Load 5 more activities
+  };
 
   // Handle search queries
   const handleSearch = async (query: string) => {
@@ -48,6 +62,8 @@ export default function DiscoverPage() {
       setLoading(true);
       const data = await fetchActivities({ query });
       setFilteredActivities(data);
+      // Reset visible count when search terms change
+      setVisibleCount(10);
     } catch (err) {
       setError('Failed to search activities. Please try again later.');
       console.error(err);
@@ -85,6 +101,8 @@ export default function DiscoverPage() {
       });
       
       setFilteredActivities(data);
+      // Reset visible count when filters change
+      setVisibleCount(10);
     } catch (err) {
       setError('Failed to filter activities. Please try again later.');
       console.error(err);
@@ -169,11 +187,28 @@ export default function DiscoverPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      {filteredActivities.map((activity) => (
-                        <ActivityCard key={activity.id} activity={activity} />
-                      ))}
-                    </div>
+                    <>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {displayedActivities.map((activity) => (
+                          <ActivityCard key={activity.id} activity={activity} />
+                        ))}
+                      </div>
+                      
+                      {/* Load More button - only show if there are more activities to load */}
+                      {displayedActivities.length < filteredActivities.length && (
+                        <div className="mt-8 text-center">
+                          <button 
+                            onClick={handleLoadMore}
+                            className="px-6 py-3 text-sm font-medium text-white transition-colors rounded-lg bg-primary-600 hover:bg-primary-700"
+                          >
+                            Load 5 More Activities
+                          </button>
+                          <p className="mt-2 text-sm text-gray-600">
+                            Showing {displayedActivities.length} of {filteredActivities.length} activities
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ) : (

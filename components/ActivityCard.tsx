@@ -1,16 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { LeisureActivity } from '../types';
 import SaveActivityButton from './SaveActivityButton';
+import { getGoogleImageUrl } from '../lib/imageService';
 
 interface ActivityCardProps {
   activity: LeisureActivity;
 }
 
 const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
+  const [imageError, setImageError] = useState(false);
+  const [dynamicImageUrl, setDynamicImageUrl] = useState<string | null>(null);
+  
   // Format price display
   const getPriceDisplay = () => {
     if (activity.price.isFree) {
@@ -18,32 +22,52 @@ const ActivityCard: React.FC<ActivityCardProps> = ({ activity }) => {
     }
     return `${activity.price.currency || '$'}${activity.price.cost?.toFixed(2)}`;
   };
+  
+  // Determine the image URL to use
+  const fallbackImageUrl = activity.images && activity.images.length > 0 
+    ? activity.images[0] 
+    : '/placeholder.jpg';
+    
+  // The image URL to display - use dynamic URL if available, fallback if not, placeholder if error
+  const displayImageUrl = imageError ? '/placeholder.jpg' : (dynamicImageUrl || fallbackImageUrl);
+  
+  // Handle image load error
+  const handleImageError = () => {
+    setImageError(true);
+  };
+  
+  // Fetch Google image when component mounts
+  useEffect(() => {
+    const fetchGoogleImage = async () => {
+      try {
+        // Create a descriptive search term
+        const searchTerm = `${activity.title} ${activity.type} ${activity.location.address}`;
+        const googleImageUrl = await getGoogleImageUrl(searchTerm);
+        
+        if (googleImageUrl) {
+          setDynamicImageUrl(googleImageUrl);
+        }
+      } catch (error) {
+        console.error('Error fetching Google image:', error);
+        // Will use the fallback image if Google search fails
+      }
+    };
+    
+    fetchGoogleImage();
+  }, [activity.title, activity.type, activity.location.address]);
 
   return (
     <div className="overflow-hidden transition-shadow bg-white rounded-lg shadow-md hover:shadow-lg">
       <div className="relative h-48">
-        {activity.images && activity.images.length > 0 ? (
+        {(activity.images && activity.images.length > 0) || dynamicImageUrl ? (
           <div className="relative w-full h-full">
             <Image
-              src={activity.images[0]}
+              src={displayImageUrl}
               alt={activity.title}
               fill
               className="object-cover"
               unoptimized
-              onError={(e) => {
-                // When image fails to load, replace with placeholder
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // Prevent infinite loop
-                target.style.display = 'none';
-                const parent = target.parentElement;
-                if (parent) {
-                  parent.classList.add('bg-gray-200', 'flex', 'items-center', 'justify-center');
-                  const placeholder = document.createElement('span');
-                  placeholder.textContent = activity.title;
-                  placeholder.className = 'text-gray-500 p-4 text-center';
-                  parent.appendChild(placeholder);
-                }
-              }}
+              onError={handleImageError}
             />
           </div>
         ) : (
