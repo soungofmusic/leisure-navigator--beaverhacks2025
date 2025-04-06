@@ -8,6 +8,7 @@ import MultimodalSearch from '../../components/MultimodalSearch';
 import ActivityCard from '../../components/ActivityCard';
 import GoogleMapsIntegration from '../../components/GoogleMapsIntegration';
 import Map from '../../components/Map';
+import PlacesAutocomplete from '../../components/PlacesAutocomplete';
 import { useUser } from '../../context/UserContext';
 
 export default function DiscoverPage() {
@@ -579,6 +580,26 @@ export default function DiscoverPage() {
                 <h4 className="text-md font-medium text-gray-800 mb-2">
                   Current Location: {mapCenter.lat.toFixed(4)}, {mapCenter.lng.toFixed(4)}
                 </h4>
+                
+                {/* Location search bar */}
+                <div className="mb-3">
+                  <PlacesAutocomplete 
+                    onPlaceSelect={(place) => {
+                      const newLocation = place.coordinates;
+                      setTempLocation(newLocation);
+                        
+                      // Update location immediately
+                      handleFilterChange({
+                        types: activeFilters.types,
+                        distance: 10,
+                        location: newLocation
+                      });
+                    }}
+                    placeholder="Search for a location or address"
+                    className="mb-2"
+                  />
+                  <p className="text-xs text-gray-500">Search for a location or click on the map below</p>
+                </div>
                 <div className="mb-2 overflow-hidden rounded-md border border-gray-300" style={{ height: '200px' }}>
                   {/* Mini Map for location selection */}
                   <Map 

@@ -863,8 +863,50 @@ function deg2rad(deg: number): number {
 export const fetchActivityById = (id: string): Promise<LeisureActivity | null> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const activity = mockLeisureActivities.find(activity => activity.id === id) || null;
-      resolve(activity);
+      // First try to find the activity in the mock data
+      const activity = mockLeisureActivities.find(activity => activity.id === id);
+      
+      if (activity) {
+        resolve(activity);
+        return;
+      }
+      
+      // Handle dynamically generated IDs (they start with 'generated-')
+      if (id.startsWith('generated-')) {
+        // Parse the activity type from the ID (format: generated-{type}-{index})
+        const parts = id.split('-');
+        if (parts.length >= 3) {
+          const activityType = parts[1] as ActivityType;
+          
+          // Find a base activity of the same type to use as a template
+          const baseActivity = mockLeisureActivities.find(a => a.type === activityType);
+          
+          if (baseActivity) {
+            // Create a new activity based on the found one
+            const generatedActivity: LeisureActivity = {
+              ...JSON.parse(JSON.stringify(baseActivity)),
+              id: id,
+              title: `${baseActivity.title} - Dynamic`,
+              description: `${baseActivity.description.split('.')[0]}. This is a dynamically generated activity based on popular locations in this area.`,
+              location: {
+                ...baseActivity.location,
+                coordinates: {
+                  lat: baseActivity.location.coordinates.lat + (Math.random() - 0.5) * 0.01,
+                  lng: baseActivity.location.coordinates.lng + (Math.random() - 0.5) * 0.01
+                }
+              },
+              rating: Number((baseActivity.rating || 4.5) - 0.1 * Math.random()).toFixed(1) as unknown as number,
+              tags: [...baseActivity.tags, 'popular']
+            };
+            
+            resolve(generatedActivity);
+            return;
+          }
+        }
+      }
+      
+      // If we get here, we couldn't find the activity
+      resolve(null);
     }, 500); // Simulate network delay
   });
 };

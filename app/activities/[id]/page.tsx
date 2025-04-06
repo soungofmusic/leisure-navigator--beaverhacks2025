@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { LeisureActivity } from '@/types';
 import Map from '@/components/Map';
 import SaveActivityButton from '@/components/SaveActivityButton';
+import { enhanceActivityDescription } from '@/lib/groqService';
 
 interface ActivityDetailPageProps {
   params: {
@@ -17,6 +18,9 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
   const [activity, setActivity] = useState<LeisureActivity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [enhancedDescription, setEnhancedDescription] = useState<string | null>(null);
+  const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadActivity = async () => {
@@ -69,6 +73,29 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
 
     loadActivity();
   }, [params.id]);
+
+  // Function to fetch enhanced information using GROQ
+  const getEnhancedInformation = async () => {
+    if (!activity) return;
+    
+    try {
+      setIsLoadingEnhanced(true);
+      setAiError(null);
+      
+      // Use GROQ to enhance the activity description
+      const enhanced = await enhanceActivityDescription(
+        activity.description,
+        activity.type
+      );
+      
+      setEnhancedDescription(enhanced);
+    } catch (err) {
+      console.error('Error getting enhanced information:', err);
+      setAiError('Could not load AI-enhanced details. Please try again later.');
+    } finally {
+      setIsLoadingEnhanced(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -162,9 +189,55 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                 </div>
               </div>
               
-              <div className="mb-6">
+              <div className="mt-6 mb-4">
                 <h2 className="mb-2 text-xl font-semibold text-gray-800">Description</h2>
                 <p className="text-gray-700">{activity.description}</p>
+                
+                {/* GROQ Enhanced Information Button */}
+                <div className="mt-4">
+                  <button 
+                    onClick={getEnhancedInformation}
+                    disabled={isLoadingEnhanced}
+                    className="flex items-center px-4 py-2 text-sm font-medium text-white transition-colors rounded-md bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400"
+                  >
+                    {isLoadingEnhanced ? (
+                      <>
+                        <svg className="w-4 h-4 mr-2 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Generating AI Details...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Generate AI-Enhanced Details
+                      </>
+                    )}
+                  </button>
+                </div>
+                
+                {/* Display Enhanced Information */}
+                {enhancedDescription && (
+                  <div className="p-4 mt-4 bg-blue-50 border border-blue-100 rounded-md">
+                    <div className="flex items-center mb-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      <h3 className="text-md font-semibold text-blue-700">AI-Enhanced Description</h3>
+                    </div>
+                    <p className="text-gray-700">{enhancedDescription}</p>
+                  </div>
+                )}
+                
+                {/* Display Error Message */}
+                {aiError && (
+                  <div className="p-4 mt-4 bg-red-50 border border-red-100 rounded-md">
+                    <p className="text-red-600">{aiError}</p>
+                  </div>
+                )}
               </div>
               
               <div className="mb-6">
