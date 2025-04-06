@@ -7,6 +7,7 @@ import SearchFilters from '../../components/SearchFilters';
 import MultimodalSearch from '../../components/MultimodalSearch';
 import ActivityCard from '../../components/ActivityCard';
 import GoogleMapsIntegration from '../../components/GoogleMapsIntegration';
+import Map from '../../components/Map';
 import { useUser } from '../../context/UserContext';
 
 export default function DiscoverPage() {
@@ -21,18 +22,90 @@ export default function DiscoverPage() {
   const [visibleCount, setVisibleCount] = useState(10); // Initially show 10 activities
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'list' | 'map'>('list');
+  // Initialize activeView from localStorage if available, otherwise default to list
+  const [activeView, setActiveView] = useState<'list' | 'map'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const savedView = localStorage.getItem('activeView');
+        if (savedView === 'list' || savedView === 'map') {
+          console.log('Restored view mode from localStorage:', savedView);
+          return savedView as 'list' | 'map';
+        }
+      } catch (e) {
+        console.error('Failed to restore view mode from localStorage:', e);
+      }
+    }
+    return 'list';
+  });
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(
-    preferences.location || {
+  // Initialize separate map centers for list and map views
+  const [listViewMapCenter, setListViewMapCenter] = useState<{ lat: number; lng: number }>(() => {
+    // Try to get list view map center from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('listViewMapCenter');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed.lat === 'number' && typeof parsed.lng === 'number') {
+            console.log('Restored list view map center from localStorage:', parsed);
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore list view map center from localStorage:', e);
+      }
+    }
+    
+    // Fallback to preferences or default
+    return preferences.location || {
       lat: 45.5152,
       lng: -122.6784, // Portland, OR
+    };
+  });
+  
+  const [mapViewMapCenter, setMapViewMapCenter] = useState<{ lat: number; lng: number }>(() => {
+    // Try to get map view map center from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('mapViewMapCenter');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed.lat === 'number' && typeof parsed.lng === 'number') {
+            console.log('Restored map view map center from localStorage:', parsed);
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore map view map center from localStorage:', e);
+      }
     }
-  );
+    
+    // Fallback to preferences or default
+    return preferences.location || {
+      lat: 45.5152,
+      lng: -122.6784, // Portland, OR
+    };
+  });
+  
+  // Use the appropriate map center based on active view
+  const mapCenter = activeView === 'list' ? listViewMapCenter : mapViewMapCenter;
+  
+  // Function to update the appropriate map center based on active view
+  const updateMapCenter = (newCenter: { lat: number; lng: number }) => {
+    if (activeView === 'list') {
+      setListViewMapCenter(newCenter);
+      localStorage.setItem('listViewMapCenter', JSON.stringify(newCenter));
+    } else {
+      setMapViewMapCenter(newCenter);
+      localStorage.setItem('mapViewMapCenter', JSON.stringify(newCenter));
+    }
+  };
   const [searchRadius, setSearchRadius] = useState<number>(10000); // Default 10km radius
   const [sortOption, setSortOption] = useState<'rating' | 'reviewCount' | null>(null);
   // Key for forcing MultimodalSearch component to refresh when location changes
-  const [searchComponentKey, setSearchComponentKey] = useState<number>(0);
+  const [searchComponentKey, setSearchComponentKey] = useState<number>(1);
+  // Temporary state for location input
+  const [tempLocation, setTempLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   // Update displayed activities when filtered activities or visible count changes
   useEffect(() => {
@@ -44,6 +117,7 @@ export default function DiscoverPage() {
     // Update the key when map center changes significantly (only to 2 decimal places)
     setSearchComponentKey(prev => prev + 1);
     console.log(`Map center updated to: ${mapCenter.lat.toFixed(4)}, ${mapCenter.lng.toFixed(4)}`);
+    console.log('Current searchComponentKey:', searchComponentKey);
   }, [mapCenter.lat.toFixed(2), mapCenter.lng.toFixed(2)]);
   
   // Load initial activities
@@ -227,7 +301,7 @@ export default function DiscoverPage() {
     setSelectedActivityId(activityId);
     const activity = activities.find(a => a.id === activityId);
     if (activity) {
-      setMapCenter(activity.location.coordinates);
+      updateMapCenter(activity.location.coordinates);
     }
   };
 
@@ -265,8 +339,8 @@ export default function DiscoverPage() {
   // Handle area search from map
   const handleAreaSearch = async ({ center, radius }: { center: { lat: number; lng: number }; radius: number }) => {
     try {
-      // Update map center and search radius - these will be reflected in search
-      setMapCenter(center);
+      // Update map center
+      updateMapCenter(center);
       setSearchRadius(radius);
       
       // Clear any previous search query when location changes significantly
@@ -326,8 +400,7 @@ export default function DiscoverPage() {
       setFilteredActivities(processedData);
       setDisplayedActivities(processedData.slice(0, visibleCount));
       
-      // Display a message about the search
-      alert(`Found ${data.length} activities near this area!`);
+      // No longer displaying alert with activity count
     } catch (error) {
       console.error('Error searching area:', error);
       setError('Failed to search this area. Please try again.');
@@ -415,7 +488,7 @@ export default function DiscoverPage() {
       
       // Update map center if location is provided in filters
       if (filters.location) {
-        setMapCenter(filters.location);
+        updateMapCenter(filters.location);
         console.log('Updated map center from filters:', filters.location);
       }
       
@@ -464,25 +537,27 @@ export default function DiscoverPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Discover Activities</h1>
         
-        {/* Sorting controls in top right */}
-        <div className="flex space-x-2">
-          <div className="relative inline-block">
-            <select
-              value={sortOption || ''}
-              onChange={(e) => handleSortChange(e.target.value as 'rating' | 'reviewCount' | null)}
-              className="block appearance-none w-full bg-white border border-gray-300 hover:border-gray-500 px-4 py-2 pr-8 rounded-md shadow leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="">Sort Activities</option>
-              <option value="rating">Highest Rating</option>
-              <option value="reviewCount">Most Reviews</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-              </svg>
+        {/* Sorting controls in top right - only visible in list view */}
+        {activeView === 'list' && (
+          <div className="flex space-x-2">
+            <div className="relative inline-block">
+              <select
+                value={sortOption || ''}
+                onChange={(e) => handleSortChange(e.target.value as 'rating' | 'reviewCount' | null)}
+                className="block appearance-none w-full bg-white border border-gray-300 hover:border-gray-500 px-4 py-2 pr-8 rounded-md shadow leading-tight focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Sort Activities</option>
+                <option value="rating">Highest Rating</option>
+                <option value="reviewCount">Most Reviews</option>
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -490,34 +565,131 @@ export default function DiscoverPage() {
         <div className="lg:col-span-1">
           <div className="p-4 bg-white rounded-lg shadow-md">
             <div className="mb-6">
-              <h3 className="mb-2 text-lg font-medium text-gray-900">
-                Smart Search
-              </h3>
-              <p className="text-sm text-gray-600 mb-2">
-                Search using text, voice commands, or snap a photo
-              </p>
-              {/* Smart natural language search - key ensures re-rendering when location changes */}
-              <MultimodalSearch 
-                key={searchComponentKey}
-                onSearch={handleSearch} 
-                location={mapCenter} 
-              />
+              <h3 className="mb-2 text-lg font-medium text-gray-900">Smart Search</h3>
+              <p className="text-sm text-gray-600 mb-2">Search using text, voice commands, or snap a photo</p>
+              <div className="w-full max-w-3xl" key={searchComponentKey}>
+                <MultimodalSearch 
+                  onSearch={handleSearch} 
+                  location={mapCenter} 
+                />
+              </div>
+              
+              {/* Location Change with Google Maps */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="text-md font-medium text-gray-800 mb-2">
+                  Current Location: {mapCenter.lat.toFixed(4)}, {mapCenter.lng.toFixed(4)}
+                </h4>
+                <div className="mb-2 overflow-hidden rounded-md border border-gray-300" style={{ height: '200px' }}>
+                  {/* Mini Map for location selection */}
+                  <Map 
+                    center={mapCenter}
+                    zoom={10}
+                    height="200px"
+                    onMapClick={(e: google.maps.MapMouseEvent) => {
+                      if (e.latLng) {
+                        const newLocation = {
+                          lat: e.latLng.lat(),
+                          lng: e.latLng.lng()
+                        };
+                        setTempLocation(newLocation);
+                        
+                        // Update location immediately
+                        handleFilterChange({
+                          types: activeFilters.types,
+                          distance: 10,
+                          location: newLocation
+                        });
+                      }
+                    }}
+                    markers={tempLocation ? [{
+                      id: 'selected-location',
+                      title: 'Selected Location',
+                      description: `${tempLocation.lat.toFixed(4)}, ${tempLocation.lng.toFixed(4)}`,
+                      position: tempLocation
+                    }] : []}
+                  />
+                </div>
+                <div className="text-sm text-gray-600">
+                  Click anywhere on the map to select a new location
+                </div>
+                <div className="mt-2 flex justify-between">
+                  <button
+                    className="px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (position) => {
+                            const currentLocation = {
+                              lat: position.coords.latitude,
+                              lng: position.coords.longitude
+                            };
+                            setTempLocation(currentLocation);
+                            
+                            // Update location immediately
+                            handleFilterChange({
+                              types: activeFilters.types,
+                              distance: 10,
+                              location: currentLocation
+                            });
+                          },
+                          (error) => {
+                            console.error('Error getting current location:', error);
+                            alert('Unable to retrieve your location. Please click on the map instead.');
+                          }
+                        );
+                      } else {
+                        alert('Geolocation is not supported by your browser.');
+                      }
+                    }}
+                  >
+                    <span className="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Use My Location
+                    </span>
+                  </button>
+                  {tempLocation && (
+                    <button
+                      className="px-4 py-2 bg-primary-600 text-white font-medium rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      onClick={() => {
+                        setTempLocation(null);
+                      }}
+                    >
+                      Clear Selection
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="mb-6">
-              <h3 className="mb-2 text-lg font-medium text-gray-900">
-                Filters
-              </h3>
-              <SearchFilters 
-                onFilterChange={handleFilterChange}
-                defaultLocation={mapCenter}
-              />
-            </div>
+            
+            {/* Only show filters in list view */}
+            {activeView === 'list' && (
+              <div className="mb-6">
+                <h3 className="mb-2 text-lg font-medium text-gray-900">
+                  Filters
+                </h3>
+                <SearchFilters 
+                  onFilterChange={handleFilterChange}
+                  defaultLocation={mapCenter}
+                />
+              </div>
+            )}
             {/* View toggle */}
             <div className="mt-4">
               <h3 className="mb-2 font-medium">View Mode</h3>
               <div className="flex p-1 space-x-1 bg-gray-100 rounded-md">
                 <button
-                  onClick={() => setActiveView('list')}
+                  onClick={() => {
+                    // Save current map center for map view before switching
+                    if (activeView === 'map') {
+                      localStorage.setItem('mapViewMapCenter', JSON.stringify(mapCenter));
+                    }
+                    setActiveView('list');
+                    // Save view mode to localStorage
+                    localStorage.setItem('activeView', 'list');
+                  }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md ${
                     activeView === 'list'
                       ? 'bg-white shadow-sm'
@@ -527,7 +699,15 @@ export default function DiscoverPage() {
                   List View
                 </button>
                 <button
-                  onClick={() => setActiveView('map')}
+                  onClick={() => {
+                    // Save current map center for list view before switching
+                    if (activeView === 'list') {
+                      localStorage.setItem('listViewMapCenter', JSON.stringify(mapCenter));
+                    }
+                    setActiveView('map');
+                    // Save view mode to localStorage
+                    localStorage.setItem('activeView', 'map');
+                  }}
                   className={`flex-1 py-2 text-sm font-medium rounded-md ${
                     activeView === 'map'
                       ? 'bg-white shadow-sm'
@@ -612,6 +792,21 @@ export default function DiscoverPage() {
                     center={mapCenter}
                     onMarkerClick={handleMarkerClick}
                     onAreaSearch={handleAreaSearch}
+                    onLocationSaved={(location) => {
+                      console.log('Location saved, updating Smart Search location:', location);
+                      
+                      // Important: Update map center and explicitly force a refresh
+                      updateMapCenter(location);
+                      
+                      // Use a more significant key change to force a complete refresh
+                      setSearchComponentKey(Math.random() * 1000);
+                      
+                      // Log to verify values
+                      console.log('After saving - New map center:', location);
+                      setTimeout(() => {
+                        console.log('After timeout - Current map center:', mapCenter);
+                      }, 100);
+                    }}
                   />
                 </div>
               )}

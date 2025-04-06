@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ActivityType } from '../types';
-import PlacesAutocomplete from './PlacesAutocomplete';
+// PlacesAutocomplete import removed as requested
 
 interface SearchFiltersProps {
   onSearch?: (query: string) => void;
@@ -22,6 +22,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<ActivityType[]>([]);
   const [distance, setDistance] = useState(10); // Distance in miles
+  const [locationInput, setLocationInput] = useState<{ lat: number, lng: number }>({ lat: 45.5152, lng: -122.6784 });
   const [location, setLocation] = useState(defaultLocation);
 
   const activityTypes: { label: string; value: ActivityType }[] = [
@@ -103,13 +104,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         </div>
       </div>
 
-      <div className="mb-4">
-        <h3 className="mb-2 font-medium">Location</h3>
-        <PlacesAutocomplete 
-          onPlaceSelect={handleLocationSelect} 
-          placeholder="Change location (default: Portland, OR)"
-        />
-      </div>
+      {/* Location selection has been moved to the main page area with Google Maps integration */}
 
       <div className="mb-4">
         <h3 className="mb-2 font-medium">Distance</h3>

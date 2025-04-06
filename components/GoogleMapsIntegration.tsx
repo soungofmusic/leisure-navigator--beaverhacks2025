@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Map from './Map';
-import PlacesAutocomplete from './PlacesAutocomplete';
+// PlacesAutocomplete removed as requested
 import { useUser } from '../context/UserContext';
 
 interface GoogleMapsIntegrationProps {
@@ -22,18 +22,21 @@ interface GoogleMapsIntegrationProps {
     center: { lat: number; lng: number }; 
     radius: number;
   }) => void;
+  onLocationSaved?: (location: { lat: number; lng: number }) => void;
 }
 
-const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
-  height = '400px',
-  showSearch = true,
-  showCurrentLocation = true,
-  showSearchThisArea = false,
-  markers = [],
-  center,
-  onMarkerClick,
-  onAreaSearch,
-}) => {
+const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = (props) => {
+  const {
+    height = '400px',
+    showSearch = true,
+    showCurrentLocation = true,
+    showSearchThisArea = false,
+    markers = [],
+    center,
+    onMarkerClick,
+    onAreaSearch,
+    onLocationSaved
+  } = props;
   const { preferences, updatePreferences } = useUser();
   const [apiKeysLoaded, setApiKeysLoaded] = useState(false);
   
@@ -90,6 +93,11 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
         ...preferences,
         location
       });
+      
+      // Notify parent component that location was saved
+      if (props.onLocationSaved) {
+        props.onLocationSaved(location);
+      }
     }
   };
   
@@ -178,11 +186,7 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
 
   return (
     <div className="w-full">
-      {showSearch && (
-        <div className="mb-4">
-          <PlacesAutocomplete onPlaceSelect={handlePlaceSelect} placeholder="Search for activities near a location" />
-        </div>
-      )}
+      {/* PlacesAutocomplete search box removed as requested */}
       
       <div className="relative">
         {!apiKeysLoaded ? (
@@ -229,7 +233,7 @@ const GoogleMapsIntegration: React.FC<GoogleMapsIntegrationProps> = ({
                   handleSaveCurrentLocation();
                   setUserMovedMap(false);
                   // Show feedback toast or alert
-                  alert('Location saved successfully!');
+                  alert('Location saved successfully! Smart Search updated.');
                 }}
                 className={`px-3 py-2 text-sm font-medium ${userMovedMap ? 'text-white bg-blue-600 hover:bg-blue-700' : 'text-primary-700 bg-white hover:bg-primary-50'} border ${userMovedMap ? 'border-blue-500' : 'border-primary-300'} rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
                   userMovedMap ? 'animate-pulse' : ''
