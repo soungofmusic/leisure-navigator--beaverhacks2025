@@ -1,6 +1,6 @@
 # Leisure Navigator
 
-![Leisure Navigator Logo](public/logo.png)
+![Leisure Navigator Logo](public/LeisureNavigator.jpg)
 
 A smart leisure discovery application developed for BeaverHacks 2025. Leisure Navigator helps users find personalized activity recommendations with AI-enhanced descriptions and web search summaries.
 
