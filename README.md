@@ -1,170 +1,72 @@
-# Leisure Navigator Project Overview
+# Leisure Navigator
 
-## 1. Introduction
+![Leisure Navigator Logo](public/logo.png)
 
-**Leisure Navigator** is a multimodal leisure discovery application designed to help users find engaging activities and events around them. By leveraging Google's innovative APIs (Maps, Calendar, Places, Vision, and Speech-to-Text) together with a headless CMS and GROQ for content querying, the app delivers real-time, personalized recommendations based on the user's location, preferences, and context.
+A smart leisure discovery application developed for BeaverHacks 2025. Leisure Navigator helps users find personalized activity recommendations with AI-enhanced descriptions and web search summaries.
 
----
+## Features
 
-## 2. Problem Statement
+- **Activity Discovery:** Search and filter leisure activities by type, location, and preferences
+- **Interactive Maps:** View activities on Google Maps with detailed information
+- **AI-Enhanced Information:** Get detailed descriptions and web search summaries powered by GROQ
+- **Recommendations:** Receive personalized activity suggestions based on your interests
+- **User Authentication:** Secure login with Firebase Authentication
+- **Dark/Light Mode:** Toggle between visual themes for comfortable viewing
 
-Many people struggle to identify leisure activities that match their interests and available time. Existing solutions often provide static lists with minimal personalization. Leisure Navigator addresses this gap by offering a dynamic and interactive experience that adapts to individual users using multimodal inputs.
+## Tech Stack
 
----
+- **Frontend:** Next.js 13 (App Router), React, TypeScript, Tailwind CSS
+- **APIs:** Google Maps, Google Places, GROQ AI
+- **Authentication & Database:** Firebase
+- **Deployment:** Google Cloud Platform (App Engine)
 
-## 3. Goals & Objectives
+## Getting Started
 
-- **Personalization:** Provide tailored recommendations using user data and context.
-- **Multimodal Interaction:** Allow users to interact via text, voice, and image inputs.
-- **Context Awareness:** Leverage location data (via Google Maps and Places) to deliver real-time suggestions.
-- **Integration with Google Ecosystem:** Sync events with Google Calendar and use Cloud Vision/Speech-to-Text for processing images and voice commands.
-- **Rapid MVP Delivery:** Focus on delivering core functionality within a 24-hour hackathon timeframe with clear future enhancement paths.
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Google Maps & Places API keys
+- GROQ API key
+- Firebase account
 
----
+### Installation
 
-## 4. Key Features
-
-- **Leisure Activity Discovery:**  
-  – Search and filter leisure activities by type, location, time, and reviews.  
-  – Use a headless CMS (e.g., Sanity) with GROQ queries to efficiently retrieve content.
-  – Location search using Google Places Autocomplete for easy destination selection.
-
-- **Multimodal Input Processing:**  
-  – **Text Input:** Query leisure activities via typed questions.  
-  – **Voice Input:** Use Google Cloud Speech-to-Text to allow hands-free queries.  
-  – **Image Recognition:** Use Google Cloud Vision API to interpret images (e.g., flyers or local scenes) and extract relevant information.
-
-- **AI-Enhanced Information:**  
-  – **GROQ-Powered Descriptions:** Generate rich, informative descriptions of activities using GROQ's LLM capabilities.  
-  – **Web Search Summaries:** Get comprehensive information about activities from web searches, summarized by GROQ's AI into structured, easy-to-read formats.  
-  – AI enhancements provide details on attractions, visitor information, interesting facts, and visitor tips on demand.
-
-- **Location-Based Services:**  
-  – Integrate Google Maps and Places API to display activities near the user and enable geo-fencing notifications.
-
-- **Calendar Integration:**  
-  – Sync events with Google Calendar to help users manage their leisure time efficiently.
-
-- **Personalization & Recommendations:**  
-  – Analyze user behavior and context to generate customized activity suggestions.
-
-- **Scalability & Deployment:**  
-  – Deployed entirely on Google Cloud Platform (GCP) using Cloud Run/App Engine, Cloud Functions, and Firestore.
-
----
-
-## 5. Technology Stack
-
-- **Frontend:**  
-  – Next.js (React) with TypeScript  
-  – Tailwind CSS for styling  
-  – Deployed on GCP (via Cloud Run or App Engine)
-
-- **Backend & APIs:**  
-  – Google Cloud Functions for serverless endpoints  
-  – Firebase Firestore for real-time data and user session management  
-  – Integration with Google Maps, Places, Calendar, Vision, and Speech-to-Text APIs  
-  – Headless CMS (e.g., Sanity) with GROQ for content management
-
-- **MCP & GitHub Integration (Advanced):**  
-
----
-
-## 6. System Architecture
-
-1. **User Interaction Layer:**  
-   – Users interact via a clean UI built with Next.js that supports text, voice, and image inputs.  
-   – The app displays interactive maps and event details.
-
-2. **API & Integration Layer:**  
-   – Google APIs provide real-time data (location, events, calendar updates, image and voice processing).  
-   – The headless CMS holds curated leisure activity content queried via GROQ.
-
-3. **Backend Services:**  
-   – GCP Cloud Functions handle business logic and API requests.  
-   – Firestore stores dynamic user data and interaction logs.
-
-4. **Deployment & Scalability:**  
-   – Containerized Next.js app deployed on Cloud Run or App Engine ensures fast loading times and global delivery.  
-   – Monitoring through GCP Cloud Monitoring ensures performance and security.
-
----
-
-## 7. AI Enhancement Features
-
-### **GROQ Integration**
-Leisure Navigator leverages GROQ's powerful language models to enhance user experience in several ways:
-
-1. **AI-Enhanced Activity Descriptions:**
-   - Click the "AI-Enhanced Description" button on any activity details page to generate a more engaging and informative description
-   - GROQ analyzes the basic activity description and enhances it with additional details and context
-
-2. **Web Search Summaries:**
-   - The "Web Search Summary" button fetches and summarizes web search results related to the activity
-   - Information is presented in a structured format including:
-     - Overview of the activity/location
-     - Key highlights and attractions
-     - Practical visitor information (hours, costs, best times to visit)
-     - Interesting facts and history
-     - Tips from visitor reviews
-
-3. **Natural Language Processing:**
-   - Enhanced search capabilities through natural language understanding
-   - Processing of user queries to understand intent and provide relevant activity suggestions
-
-### **Environment Setup**
-To use the GROQ features, you need to set up your environment variables:
-
-1. Create a `.env` file in the root directory with the following:
-   ```
-   NEXT_PUBLIC_GROQ_API_KEY=your_groq_api_key
+1. Clone the repository
+   ```bash
+   git clone https://github.com/soungofmusic/leisure-navigator--beaverhacks2025.git
+   cd leisure-navigator--beaverhacks2025
    ```
 
-2. Obtain an API key from [GROQ](https://console.groq.com/) and add it to your environment variables
+2. Install dependencies
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
-## 8. Workflow & Development Timeline (24-Hour MVP)
+3. Create a `.env` file in the root directory (see `.env.example` for required variables)
 
-### **Hours 1-2: Setup & Planning**
-- Finalize project scope, create wireframes, and outline user journeys.
-- Set up the GCP project, enable necessary APIs, and configure Firebase Firestore.
+4. Start the development server
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
 
-### **Hours 2-5: Frontend Development**
-- Scaffold a new Next.js project and build essential pages (Home, Search Results, Details).
-- Integrate Tailwind CSS and set up Google Maps for displaying leisure spots.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-### **Hours 5-9: Backend & API Integration**
-- Develop serverless endpoints with Cloud Functions to handle API calls.
-- Integrate Google APIs (Maps, Places, Calendar, Vision, Speech-to-Text) and set up GROQ queries for the headless CMS.
+## Deployment
 
-### **Hours 9-13: Multimodal Features & Core Functionality**
-- Implement text search for leisure activities.
-- Prototype voice and image input handling (if time permits, or stub out these features).
-- Test the integrated system with mock data.
+The application is configured for deployment to Google App Engine:
 
-### **Hours 13-16: UI/UX Refinement & Testing**
-- Refine the interface for intuitive multimodal interaction.
-- Test error handling and ensure all integrations (APIs, Firestore, MCP) function as expected.
+```bash
+gcloud app deploy
+```
 
-### **Hours 16-20: Deployment & Final Testing**
-- Containerize and deploy the Next.js app on GCP using Cloud Run or App Engine.
-- Perform final testing on responsiveness, performance, and security.
+## Project Story
 
-### **Hours 20-24: Demo Preparation & Documentation**
-- Prepare a demo showcasing key functionalities (search, map, calendar sync, and multimodal inputs).
-- Document the project, including setup instructions, known limitations, and future enhancements.
-- Create a brief presentation or video walkthrough for the hackathon.
+Check out our [PROJECT_STORY.md](PROJECT_STORY.md) for details about our BeaverHacks 2025 journey, including our inspiration, challenges, and lessons learned.
 
----
+## License
 
-## 9. Future Enhancements
-
-- **Full Multimodal Integration:**  
-  – Enhance voice and image processing with improved AI and error handling.
-- **Advanced Personalization:**  
-  – Implement machine learning models to provide deeper recommendations based on user behavior.
-- **Extended MCP Integration:**  
-  – Refine the GitHub MCP server or workspace rules to provide richer context from external libraries.
-- **AR/VR Augmented Experience:**  
-  – Integrate augmented reality for immersive navigation of local events.
-- **Social & Collaborative Features:**  
-  – Allow users to share their leisure plans and reviews with friends or community groups.
+This project is licensed under the MIT License - see the LICENSE file for details.
