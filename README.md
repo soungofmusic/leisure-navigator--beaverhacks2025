@@ -23,11 +23,15 @@ A smart leisure discovery application developed for BeaverHacks 2025. Leisure Na
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Google Maps & Places API keys
-- GROQ API key
-- Firebase account
+Before you begin, make sure you have the following installed and available:
+
+- **Node.js**: Version 18 or higher
+- **Package Manager**: npm or yarn
+- **API Keys**:
+  - Google Maps API key
+  - Google Places API key
+  - GROQ API key (for AI features)
+- **Firebase**: A Firebase project with authentication enabled
 
 ### Installation
 
